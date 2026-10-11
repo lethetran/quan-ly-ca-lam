@@ -1,8 +1,11 @@
 # Quản Lý Ca Làm — hệ thống phân ca & đối soát 3 bên
 
-**🌐 Website đang chạy tại: https://lethetran.github.io/quan-ly-ca-lam/**
+**🌐 Website chính thức (Vercel, tự deploy mỗi lần `git push`): https://quan-ly-ca-lam.vercel.app**
+**Bản dự phòng (GitHub Pages): https://lethetran.github.io/quan-ly-ca-lam/**
 
 Repo: https://github.com/lethetran/quan-ly-ca-lam · Backend: Supabase project `pbivhjppjwfupotfatyy` (vùng Singapore, gói free)
+
+> Lưu ý: GitHub Actions đang khóa do tài khoản GitHub có vấn đề billing → bản Pages chưa tự cập nhật theo push (Vercel thì CÓ). Vào github.com → Settings → Billing để mở khóa nếu muốn Pages tự chạy.
 
 ## Tài khoản mẫu (đổi mật khẩu sau khi nhận bàn giao)
 
