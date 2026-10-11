@@ -120,3 +120,9 @@ export function maskCccd(cccd: string | null): string {
   if (!cccd) return '—'
   return cccd.length <= 6 ? cccd : cccd.slice(0, 3) + '*'.repeat(cccd.length - 6) + cccd.slice(-3)
 }
+
+// ===== Chuẩn mật khẩu =====
+export const PASSWORD_HINT = 'Tối thiểu 8 ký tự, gồm cả chữ và số'
+export function passwordOk(pw: string): boolean {
+  return pw.length >= 8 && /[a-zA-Z]/.test(pw) && /\d/.test(pw)
+}

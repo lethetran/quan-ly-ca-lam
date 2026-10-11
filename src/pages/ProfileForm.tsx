@@ -38,21 +38,22 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
       push('Điền đủ: họ tên, CCCD (9-12 số), SĐT, địa chỉ, ngân hàng, số tài khoản', true)
       return
     }
-    if (!front || !back) { push('Cần tải lên ảnh CCCD mặt trước VÀ mặt sau', true); return }
+    const alreadyApproved = profile.kyc_status === 'approved'
+    if (!alreadyApproved && (!front || !back)) { push('Cần tải lên ảnh CCCD mặt trước VÀ mặt sau', true); return }
     setBusy(true)
     try {
-      const frontPath = await uploadImage(profile.id, 'front', front)
-      const backPath = await uploadImage(profile.id, 'back', back)
-      await updateOwnProfile(profile.id, {
+      const patch: Parameters<typeof updateOwnProfile>[1] = {
         ...f,
         cccd: f.cccd.trim(),
         phone: f.phone.trim(),
-        cccd_front_path: frontPath,
-        cccd_back_path: backPath,
-        kyc_status: 'pending',
-      })
+      }
+      if (front) patch.cccd_front_path = await uploadImage(profile.id, 'front', front)
+      if (back) patch.cccd_back_path = await uploadImage(profile.id, 'back', back)
+      // hồ sơ đã duyệt: chỉ cập nhật thông tin, không quay lại chờ duyệt
+      if (!alreadyApproved) patch.kyc_status = 'pending'
+      await updateOwnProfile(profile.id, patch)
       await reloadProfile()
-      push('Đã nộp hồ sơ — chờ Admin 2 duyệt')
+      push(alreadyApproved ? 'Đã cập nhật thông tin' : 'Đã nộp hồ sơ — chờ Admin 2 duyệt')
       onDone?.()
     } catch (e) {
       push((e as Error).message, true)
@@ -72,14 +73,14 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <span className="label">Ảnh CCCD mặt trước *</span>
+          <span className="label">Ảnh CCCD mặt trước {profile?.kyc_status === 'approved' ? '(chọn nếu muốn thay)' : '*'}</span>
           <button className="btn-ghost w-full" onClick={() => frontRef.current?.click()}>
             <Camera size={15} /> {front ? `Đã chọn: ${front.name.slice(0, 24)}` : 'Chụp / chọn ảnh mặt trước'}
           </button>
           <input ref={frontRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => setFront(e.target.files?.[0] ?? null)} />
         </div>
         <div>
-          <span className="label">Ảnh CCCD mặt sau *</span>
+          <span className="label">Ảnh CCCD mặt sau {profile?.kyc_status === 'approved' ? '(chọn nếu muốn thay)' : '*'}</span>
           <button className="btn-ghost w-full" onClick={() => backRef.current?.click()}>
             <Camera size={15} /> {back ? `Đã chọn: ${back.name.slice(0, 24)}` : 'Chụp / chọn ảnh mặt sau'}
           </button>
@@ -89,9 +90,10 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
       <Banner kind="info">
         <ShieldCheck size={14} className="mr-1 inline" />
         Ảnh CCCD chỉ Admin 2 (duyệt hồ sơ) xem được để xác thực. Thông tin tài khoản ngân hàng dùng để nhận thanh toán ca làm.
+        {profile?.kyc_status === 'approved' && ' Hồ sơ của bạn đã được duyệt — sửa thông tin xong bấm Lưu, không cần duyệt lại.'}
       </Banner>
       <button className="btn-primary w-full" disabled={busy} onClick={submit}>
-        {busy ? 'Đang nộp…' : 'Nộp hồ sơ chờ duyệt'}
+        {busy ? 'Đang lưu…' : profile?.kyc_status === 'approved' ? 'Lưu thay đổi' : 'Nộp hồ sơ chờ duyệt'}
       </button>
     </div>
   )

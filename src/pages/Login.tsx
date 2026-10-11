@@ -1,9 +1,32 @@
 import { CalendarRange, ClipboardCheck, ShieldCheck, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ProfileForm } from './ProfileForm'
-import { KycBanner } from './ProfileForm'
+import { ProfileForm, KycBanner } from './ProfileForm'
 import { useSession, useToast } from '../lib/store'
+import { PASSWORD_HINT, passwordOk } from '../lib/util'
+
+/** Bắt buộc hoàn thiện hồ sơ ngay sau khi tạo tài khoản (người đi làm) */
+export function Onboarding() {
+  const { profile, signOut } = useSession()
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="font-display text-2xl font-bold uppercase">
+          Quản Lý <span className="text-accent">Ca Làm</span>
+        </div>
+        <button className="btn-ghost !py-1.5 text-xs" onClick={signOut}>Đăng xuất</button>
+      </div>
+      <div className="card p-6">
+        <h1 className="text-2xl font-bold">Hoàn thiện hồ sơ để bắt đầu</h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Điền đầy đủ thông tin và 2 mặt CCCD. <b>Admin 2 duyệt xong</b> là bạn đăng ký ca được ngay.
+        </p>
+        {profile && <div className="mt-3"><KycBanner status={profile.kyc_status} note={profile.kyc_note} /></div>}
+        <div className="mt-4"><ProfileForm /></div>
+      </div>
+    </div>
+  )
+}
 
 export default function Login() {
   const { profile, userId, signIn, signUp } = useSession()
@@ -47,9 +70,9 @@ export default function Login() {
         await signIn(login, pw)
         push('Đăng nhập thành công')
       } else {
-        if (pw.length < 6) { push('Mật khẩu tối thiểu 6 ký tự', true); setBusy(false); return }
+        if (!passwordOk(pw)) { push('Mật khẩu phải ' + PASSWORD_HINT, true); setBusy(false); return }
         await signUp(login, pw)
-        push('Tạo tài khoản thành công — hãy điền hồ sơ')
+        push('Tạo tài khoản thành công — điền hồ sơ để bắt đầu')
       }
     } catch (e) {
       push((e as Error).message, true)
@@ -120,7 +143,7 @@ export default function Login() {
                   type="password"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
-                  placeholder={mode === 'register' ? 'Tối thiểu 6 ký tự' : '••••••••'}
+                  placeholder={mode === 'register' ? 'Tối thiểu 8 ký tự, có chữ và số' : '••••••••'}
                   onKeyDown={(e) => e.key === 'Enter' && submit()}
                 />
               </div>

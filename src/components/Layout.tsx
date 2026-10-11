@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, ClipboardCheck, ClipboardList, FileSpreadsheet, LayoutDashboard, LogOut, Menu, ShieldCheck, UserCog, Users, X } from 'lucide-react'
+import { Bell, CalendarDays, ClipboardCheck, ClipboardList, FileSpreadsheet, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, UserCog, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { listNotifs } from '../lib/api'
@@ -21,6 +21,7 @@ const NAV: NavItem[] = [
   { to: '/kyc', label: 'Duyệt hồ sơ CCCD', icon: ShieldCheck, roles: ['admin2'] },
   { to: '/users', label: 'Quản lý người dùng', icon: UserCog, roles: ['admin'] },
   { to: '/audit', label: 'Nhật ký hệ thống', icon: FileSpreadsheet, roles: ['admin'] },
+  { to: '/profile', label: 'Hồ sơ & cài đặt', icon: Settings, roles: ['worker', 'recruiter', 'owner', 'admin2', 'admin'] },
   { to: '/guide', label: 'Hướng dẫn sử dụng', icon: LayoutDashboard, roles: ['worker', 'recruiter', 'owner', 'admin2', 'admin'] },
 ]
 

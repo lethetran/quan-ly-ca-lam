@@ -3,7 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { Spinner, Banner } from './components/ui'
 import { SessionProvider, ToastProvider, useSession } from './lib/store'
-import Login from './pages/Login'
+import Login, { Onboarding } from './pages/Login'
 import { WorkerMyShifts, WorkerShifts, WorkerStats } from './pages/Worker'
 import { ApproveShifts, Reconcile, ReconcileList, RecruiterDashboard, ShiftPeople } from './pages/Recruiter'
 import { CreateShift, OwnerShifts, OwnerStats } from './pages/Owner'
@@ -46,6 +46,10 @@ function Shell() {
   const { ready, profile } = useSession()
   if (!ready) return <div className="flex min-h-screen items-center justify-center"><Spinner /></div>
   if (!profile) return <Login />
+  // Người đi làm chưa nộp / bị từ chối hồ sơ: bắt sang bước điền hồ sơ ngay
+  if (profile.role === 'worker' && (profile.kyc_status === 'unsubmitted' || profile.kyc_status === 'rejected')) {
+    return <Onboarding />
+  }
   return (
     <Layout>
       <Routes>

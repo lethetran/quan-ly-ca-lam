@@ -6,7 +6,7 @@ import { listNotifs, markNotifsRead } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import { useSession, useToast } from '../lib/store'
 import type { Notif } from '../lib/types'
-import { fmtDT } from '../lib/util'
+import { fmtDT, PASSWORD_HINT, passwordOk } from '../lib/util'
 
 function PasswordChange() {
   const { push } = useToast()
@@ -14,7 +14,7 @@ function PasswordChange() {
   const [pw2, setPw2] = useState('')
   const [busy, setBusy] = useState(false)
   const submit = async () => {
-    if (pw.length < 8) { push('Mật khẩu tối thiểu 8 ký tự', true); return }
+    if (!passwordOk(pw)) { push('Mật khẩu phải ' + PASSWORD_HINT, true); return }
     if (pw !== pw2) { push('Hai lần nhập mật khẩu không khớp', true); return }
     setBusy(true)
     try {
@@ -29,7 +29,7 @@ function PasswordChange() {
     <div className="card p-5">
       <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold uppercase"><KeyRound size={17} className="text-accent" /> Đổi mật khẩu</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div><span className="label">Mật khẩu mới (tối thiểu 8 ký tự)</span><input className="field" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
+        <div><span className="label">Mật khẩu mới ({PASSWORD_HINT.toLowerCase()})</span><input className="field" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
         <div><span className="label">Nhập lại mật khẩu mới</span><input className="field" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></div>
       </div>
       <button className="btn-dark mt-3" disabled={busy} onClick={submit}>{busy ? 'Đang lưu…' : 'Lưu mật khẩu mới'}</button>
