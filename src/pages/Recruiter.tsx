@@ -384,13 +384,13 @@ export function Reconcile() {
       const cur = d[rid]
       const next = { ...cur, ...patch }
       if (patch.attendance !== undefined) {
-        // đổi chấm công: tự đặt lại số giờ mặc định (nửa ca = 1/2, vắng = 0), người dùng vẫn sửa tay được sau
+        // đổi chấm công: đặt giá trị MẶC ĐỊNH (nửa ca = 1/2 giờ, vắng = 0) — chỉ là gợi ý
         const base = shiftTimes(shift).hours
         next.hours = patch.attendance === 'full' ? base : patch.attendance === 'half' ? Math.round((base / 2) * 100) / 100 : 0
         next.pay = Math.round(next.hours * shift.rate)
-      } else if (patch.hours !== undefined) {
-        next.pay = Math.round(next.hours * shift.rate)
       }
+      // đổi số giờ hoặc sửa tiền trực tiếp: KHÔNG đè tiền — tiền là số độc lập
+      // (dùng cho ca thỏa thuận riêng, phụ cấp, trừ phí… không bắt buộc theo đơn giá × giờ)
       return { ...d, [rid]: next }
     })
   }
@@ -457,6 +457,12 @@ export function Reconcile() {
         </div>
       </div>
       {!editable && <Banner kind="warn">Ca đang ở trạng thái <b>{SHIFT_STATUS_LABEL[shift.status]}</b> — bảng chỉ xem được, không sửa.</Banner>}
+      {editable && (
+        <Banner kind="info">
+          Số giờ và <b>tiền thanh toán đều sửa trực tiếp được</b> — công thức đơn giá × giờ chỉ là gợi ý ban đầu.
+          Dùng cho các trường hợp thỏa thuận riêng: làm thêm giờ, phụ cấp, trừ tạm ứng…
+        </Banner>
+      )}
 
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[900px] border-collapse">
