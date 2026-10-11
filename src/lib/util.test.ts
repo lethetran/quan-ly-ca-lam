@@ -60,7 +60,7 @@ describe('tài khoản', () => {
   it('tên ngắn ánh xạ về @nhanvien.local; email giữ nguyên và thường hóa', () => {
     expect(toEmail('0901234567')).toBe('0901234567@nhanvien.local')
     expect(toEmail('Lam1')).toBe('lam1@nhanvien.local')
-    expect(toEmail('TransG87@Gmail.COM')).toBe('admin@example.com')
+    expect(toEmail('Example@Gmail.COM')).toBe('example@gmail.com')
   })
   it('tên đăng nhập hợp lệ 3–24 ký tự', () => {
     expect(usernameOk('lam1')).toBe(true)
