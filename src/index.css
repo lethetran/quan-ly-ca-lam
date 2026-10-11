@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-display tracking-tight;
+  }
+  input, select, textarea {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-ink placeholder-zinc-400
+      focus:border-accent focus:ring-2 focus:ring-accent/25 transition;
+  }
+  .label {
+    @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-semibold transition
+      disabled:cursor-not-allowed disabled:opacity-40 select-none;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-orange-700 active:scale-[.98];
+  }
+  .btn-dark {
+    @apply btn bg-ink text-paper hover:bg-zinc-800 active:scale-[.98];
+  }
+  .btn-ghost {
+    @apply btn border border-zinc-300 bg-white text-ink hover:bg-zinc-100;
+  }
+  .btn-danger {
+    @apply btn bg-red-700 text-white hover:bg-red-800;
+  }
+  .card {
+    @apply rounded-xl border border-zinc-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,.06)];
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold leading-4;
+  }
+  .th {
+    @apply border border-zinc-300 bg-zinc-100 px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wide text-zinc-600;
+  }
+  .td {
+    @apply border border-zinc-200 px-2 py-1.5 text-sm;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* thanh cuộn mảnh kiểu công nghiệp */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 8px; border: 2px solid #FAFAF9; }
+*::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
