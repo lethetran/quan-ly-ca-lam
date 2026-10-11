@@ -2,13 +2,11 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { addLabel, getProfile, listLabels, removeLabel } from '../lib/api'
 import { useSession, useToast } from '../lib/store'
-import { LABELS, type Label, type Profile, type Registration, KycStatus, } from '../lib/types'
-import { LABELS as LBL } from '../lib/types'
+import { LABELS, type Label, type Profile, type Registration, type KycStatus } from '../lib/types'
 import { fmtD, maskCccd, money, num } from '../lib/util'
 import { Badge, Modal, Spinner } from './ui'
 
-const KYC_LABEL: Record<KycStatus, { text: string; cls: string }> = {
-  unsubmitted: { text: 'Chưa nộp hồ sơ', cls: 'bg-zinc-200 text-zinc-600 border-zinc-300' },
+const KYC_LABEL: Record<KycStatus, { text: string; cls: string }> = {  unsubmitted: { text: 'Chưa nộp hồ sơ', cls: 'bg-zinc-200 text-zinc-600 border-zinc-300' },
   pending: { text: 'Chờ duyệt hồ sơ', cls: 'bg-amber-100 text-amber-800 border-amber-300' },
   approved: { text: 'Hồ sơ đã duyệt', cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
   rejected: { text: 'Hồ sơ bị từ chối', cls: 'bg-red-100 text-red-700 border-red-300' },
@@ -122,7 +120,7 @@ export default function WorkerCard({
             <div key={l.id} className="flex items-center justify-between rounded-md border border-zinc-200 px-2.5 py-1.5 text-xs">
               <span>
                 <Badge className={LABELS[l.code]?.bad ? 'border-red-300 bg-red-50 text-red-700' : 'border-emerald-300 bg-emerald-50 text-emerald-700'}>
-                  {LBL[l.code]?.label ?? l.code}
+                  {LABELS[l.code]?.label ?? l.code}
                 </Badge>
                 {l.note && <span className="ml-2 text-zinc-500">{l.note}</span>}
               </span>

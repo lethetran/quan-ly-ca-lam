@@ -23,7 +23,7 @@ export default function Login() {
           <h1 className="text-2xl font-bold">Chào bạn!</h1>
           <p className="mt-1 text-sm text-zinc-500">Tài khoản <b>{login}</b> đã đăng nhập.</p>
           {profile?.role === 'worker' && (
-            <div className="mt-4"><KycBanner status={profile.kyc_status} /></div>
+            <div className="mt-4"><KycBanner status={profile.kyc_status} note={profile.kyc_note} /></div>
           )}
           {blocked && profile?.kyc_status !== 'pending' && (
             <div className="mt-4 border-t border-zinc-200 pt-4">

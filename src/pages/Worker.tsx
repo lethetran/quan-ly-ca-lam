@@ -10,35 +10,6 @@ import type { Label, Profile, Registration, Shift } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
 import { effStatus, fmtD, fmtT, money, num, shiftTimes, ym, monthName } from '../lib/util'
 
-type Data = {
-  shifts: Shift[]
-  regs: Registration[]
-  labels: Label[]
-  profiles: Profile[]
-}
-
-function useData(): Data | null {
-  const { userId } = useSession()
-  const [data, setData] = useState<Data | null>(null)
-  const [tick, setTick] = useState(0)
-  useEffect(() => {
-    if (!userId) return
-    let alive = true
-    ;(async () => {
-      try {
-        const [shifts, regs, labels] = await Promise.all([listShifts(), listRegistrations({ workerId: userId }), listLabels()])
-        if (alive) setData({ shifts, regs, labels, profiles: [] })
-      } catch (e) {
-        console.error(e)
-      }
-    })()
-    return () => { alive = false }
-  }, [userId, tick])
-  const reload = () => setTick((t) => t + 1)
-  return data ? { ...data, } : null
-}
-
-// Gắn reload qua context đơn giản: dùng state tạm — trang tự load lại sau mỗi hành động
 export function WorkerShifts() {
   const { userId } = useSession()
   const [shifts, setShifts] = useState<Shift[] | null>(null)

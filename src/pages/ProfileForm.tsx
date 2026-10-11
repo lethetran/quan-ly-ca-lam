@@ -97,7 +97,12 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
   )
 }
 
-export function KycBanner({ status }: { status: KycStatus }) {
+export function KycBanner({ status, note }: { status: KycStatus; note?: string | null }) {
   const t = KYC_TEXT[status]
-  return <div className={`rounded-lg border px-4 py-2.5 text-sm font-medium ${t.cls}`}>{t.text}</div>
+  return (
+    <div className={`rounded-lg border px-4 py-2.5 text-sm font-medium ${t.cls}`}>
+      {t.text}
+      {status === 'rejected' && note && <div className="mt-1 text-xs font-normal opacity-80">Lý do: {note}</div>}
+    </div>
+  )
 }

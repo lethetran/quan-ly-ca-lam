@@ -1,11 +1,41 @@
-import { BellRing, CheckCheck, Camera } from 'lucide-react'
+import { BellRing, CheckCheck, Camera, KeyRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { KycBanner, ProfileForm } from './ProfileForm'
 import { Empty, Spinner } from '../components/ui'
 import { listNotifs, markNotifsRead } from '../lib/api'
+import { supabase } from '../lib/supabase'
 import { useSession, useToast } from '../lib/store'
 import type { Notif } from '../lib/types'
 import { fmtDT } from '../lib/util'
+
+function PasswordChange() {
+  const { push } = useToast()
+  const [pw, setPw] = useState('')
+  const [pw2, setPw2] = useState('')
+  const [busy, setBusy] = useState(false)
+  const submit = async () => {
+    if (pw.length < 8) { push('Mật khẩu tối thiểu 8 ký tự', true); return }
+    if (pw !== pw2) { push('Hai lần nhập mật khẩu không khớp', true); return }
+    setBusy(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw })
+      if (error) throw error
+      push('Đổi mật khẩu thành công ✓')
+      setPw(''); setPw2('')
+    } catch (e) { push((e as Error).message, true) }
+    setBusy(false)
+  }
+  return (
+    <div className="card p-5">
+      <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold uppercase"><KeyRound size={17} className="text-accent" /> Đổi mật khẩu</h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div><span className="label">Mật khẩu mới (tối thiểu 8 ký tự)</span><input className="field" type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
+        <div><span className="label">Nhập lại mật khẩu mới</span><input className="field" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></div>
+      </div>
+      <button className="btn-dark mt-3" disabled={busy} onClick={submit}>{busy ? 'Đang lưu…' : 'Lưu mật khẩu mới'}</button>
+    </div>
+  )
+}
 
 export function Notifications() {
   const { profile } = useSession()
@@ -55,16 +85,20 @@ export function MyProfile() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-2xl font-bold">Hồ sơ của tôi</h1>
-      {isWorker && <KycBanner status={profile.kyc_status} />}
-      <div className="card p-5">
-        <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold uppercase"><Camera size={17} className="text-accent" /> Thông tin & ảnh CCCD</h2>
-        <ProfileForm />
-      </div>
-      {!isWorker && (
-        <p className="text-sm text-zinc-500">
-          Bạn là <b>{profile.role === 'recruiter' ? 'bên tuyển dụng' : profile.role === 'owner' ? 'bên chủ/công ty' : 'quản trị'}</b> — không cần hồ sơ CCCD.
-        </p>
+      {isWorker && <KycBanner status={profile.kyc_status} note={profile.kyc_note} />}
+      {profile.kyc_status === 'rejected' || profile.kyc_status === 'unsubmitted' || isWorker ? (
+        <div className="card p-5">
+          <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold uppercase"><Camera size={17} className="text-accent" /> Thông tin & ảnh CCCD</h2>
+          <ProfileForm />
+        </div>
+      ) : (
+        <div className="card p-5 text-sm text-zinc-600">
+          <div className="font-semibold text-ink">{profile.full_name || '(chưa đặt tên)'}</div>
+          <div className="mt-1">Tài khoản: {profile.username}</div>
+          <p className="mt-2 text-zinc-500">Bạn là <b>{profile.role === 'recruiter' ? 'bên tuyển dụng' : profile.role === 'owner' ? 'bên chủ/công ty' : 'quản trị'}</b> — không cần hồ sơ CCCD.</p>
+        </div>
       )}
+      <PasswordChange />
     </div>
   )
 }

@@ -152,6 +152,13 @@ export async function removeLabel(id: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+// ===== Danh sách tên người trong ca (RPC bảo mật, không lộ thông tin nhạy cảm) =====
+export async function fetchRoster(shiftId: string): Promise<{ worker_id: string; full_name: string | null; reg_status: string }[]> {
+  const { data, error } = await supabase.rpc('roster_for', { p_shift: shiftId })
+  if (error) throw new Error(error.message)
+  return (data as { worker_id: string; full_name: string | null; reg_status: string }[]) ?? []
+}
+
 // ===== Thông báo =====
 export async function listNotifs(userId: string): Promise<Notif[]> {
   const { data, error } = await supabase

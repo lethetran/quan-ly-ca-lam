@@ -34,6 +34,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => setOpen(false), [loc.pathname])
   useEffect(() => {
+    const current = items.find((n) => loc.pathname.startsWith(n.to))
+    document.title = current ? `${current.label} · Quản Lý Ca Làm` : 'Quản Lý Ca Làm'
+  }, [loc.pathname])
+  useEffect(() => {
     if (!profile) return
     let alive = true
     const load = async () => {

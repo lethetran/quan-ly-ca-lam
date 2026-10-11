@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { registerShift, updateRegistration } from '../lib/api'
+import { fetchRoster, registerShift, updateRegistration } from '../lib/api'
 import { useSession, useToast } from '../lib/store'
 import type { Profile, Registration, Shift } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
@@ -24,19 +24,29 @@ export default function ShiftDetail({
   const { push } = useToast()
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const [roster, setRoster] = useState<{ worker_id: string; full_name: string | null; reg_status: string }[]>([])
 
   useEffect(() => { setNote('') }, [shift?.id])
+  useEffect(() => {
+    if (!shift) return
+    setRoster([])
+    let alive = true
+    fetchRoster(shift.id)
+      .then((rows) => { if (alive) setRoster(rows) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [shift?.id])
   if (!shift || !me) return null
 
   // chỉ xét đăng ký thuộc đúng ca này
   const regs = allRegs.filter((r) => r.shift_id === shift.id)
   const { hours } = shiftTimes(shift)
   const eff = effStatus(shift)
-  const active = regs.filter((r) => r.status === 'pending' || r.status === 'approved')
-  const remaining = Math.max(0, shift.capacity - active.length)
+  const activeCount = roster.length
+  const remaining = Math.max(0, shift.capacity - activeCount)
   const open = regOpen(shift)
   const myReg = regs.find((r) => r.worker_id === me.id && r.status !== 'removed')
-  const nameOf = (id: string) => profiles.find((p) => p.id === id)?.full_name || 'Người làm'
+  const nameOf = (id: string) => profiles.find((p) => p.id === id)?.full_name || roster.find((r) => r.worker_id === id)?.full_name || 'Người làm'
   const canRegister = me.role === 'worker' && open && !myReg && remaining > 0 && me.kyc_status === 'approved'
   const canCancel = me.role === 'worker' && myReg?.status === 'pending' && open
 
@@ -77,7 +87,7 @@ export default function ShiftDetail({
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Số giờ / đơn giá</div><div className="font-semibold">{hours} giờ</div><div>{money(shift.rate)}/giờ</div></div>
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Nhận được/ca</div><div className="font-semibold text-accent">{money(shift.rate * hours)}</div><div className="text-xs text-zinc-400">trước khi chấm công</div></div>
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Địa điểm</div><div className="font-semibold">{shift.location}</div></div>
-          <div><div className="text-[11px] font-bold uppercase text-zinc-400">Số lượng</div><div className="font-semibold">{active.length}/{shift.capacity} người</div><div className="text-xs text-zinc-400">còn trống {remaining}</div></div>
+          <div><div className="text-[11px] font-bold uppercase text-zinc-400">Số lượng</div><div className="font-semibold">{activeCount}/{shift.capacity} người</div><div className="text-xs text-zinc-400">còn trống {remaining}</div></div>
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Hạn đăng ký</div><div className="font-semibold">{shift.reg_deadline ? fmtDT(shift.reg_deadline) : 'Đến giờ bắt đầu'}</div></div>
           {(shift.contact_name || shift.contact_phone) && (
             <div className="col-span-2 sm:col-span-3"><div className="text-[11px] font-bold uppercase text-zinc-400">Người liên hệ tại chỗ</div><div className="font-semibold">{shift.contact_name || '—'} {shift.contact_phone ? '· ' + shift.contact_phone : ''}</div></div>
@@ -122,14 +132,14 @@ export default function ShiftDetail({
 
         {/* Danh sách người trong ca */}
         <div>
-          <div className="label">Người trong ca ({active.length})</div>
-          {active.length === 0 ? (
+          <div className="label">Người trong ca ({activeCount})</div>
+          {activeCount === 0 ? (
             <div className="text-sm text-zinc-400">Chưa có ai đăng ký.</div>
           ) : (
             <div className="flex flex-wrap gap-1.5">
-              {active.map((r) => (
-                <Badge key={r.id} className={r.status === 'approved' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-amber-300 bg-amber-50 text-amber-800'}>
-                  {nameOf(r.worker_id)}{r.status === 'pending' ? ' (chờ)' : ''}
+              {roster.map((r) => (
+                <Badge key={r.worker_id} className={r.reg_status === 'approved' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-amber-300 bg-amber-50 text-amber-800'}>
+                  {r.full_name || 'Người làm'}{r.reg_status === 'pending' ? ' (chờ)' : ''}
                 </Badge>
               ))}
             </div>
