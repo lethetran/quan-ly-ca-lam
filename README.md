@@ -1,5 +1,28 @@
 # Quản Lý Ca Làm — hệ thống phân ca & đối soát 3 bên
 
+**🌐 Website đang chạy tại: https://lethetran.github.io/quan-ly-ca-lam/**
+
+Repo: https://github.com/lethetran/quan-ly-ca-lam · Backend: Supabase project `pbivhjppjwfupotfatyy` (vùng Singapore, gói free)
+
+## Tài khoản mẫu (đổi mật khẩu sau khi nhận bàn giao)
+
+| Vai trò | Đăng nhập | Mật khẩu |
+|---|---|---|
+| Quản trị cao nhất (admin) | `admin@example.com` | `***DA-XOA-KHOI-LICH-SU***` |
+| Chủ / Công ty | `chucong` | `***DA-XOA-KHOI-LICH-SU***` |
+| Tuyển dụng | `tuyendung` | `***DA-XOA-KHOI-LICH-SU***` |
+| Duyệt hồ sơ (Admin 2) | `admin2` | `***DA-XOA-KHOI-LICH-SU***` |
+| Người đi làm | `lam1`, `lam2` | `***DA-XOA-KHOI-LICH-SU***` |
+
+Đăng nhập bằng **tên ngắn hoặc email** đều được: hệ thống ánh xạ tên ngắn sang `<tên>@nhanvien.local`.
+Mọi tài khoản tự đăng ký mới mặc định là **Người đi làm**; `admin@example.com` tự động thành admin (trigger DB).
+
+## Deploy lên Vercel (1 bước, đã cấu hình sẵn)
+
+Repo đã chứa `.env.production` (giá trị public-by-design) nên không cần khai biến môi trường tay:
+1. Mở https://vercel.com/new → chọn repo **quan-ly-ca-lam** → **Deploy**.
+2. (Hoặc) cấp cho AI một Vercel token (vercel.com/account/tokens) để tự deploy bằng CLI.
+
 Website quản lý nhân sự đi làm theo ca, 3 bên phối hợp:
 
 | Vai trò | Làm gì |
