@@ -1,6 +1,6 @@
 import { supabase, BUCKET } from './supabase'
 import type { AuditLog, Attendance, Label, Notif, PayStatus, Profile, Registration, Shift } from './types'
-import { compressImage } from './util'
+import { compressImage, imageOk } from './util'
 
 function unwrap<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message)
@@ -44,6 +44,8 @@ export async function adminUpdateProfile(id: string, patch: Partial<Profile>): P
 
 // ===== Ảnh CCCD / chứng từ =====
 export async function uploadImage(userId: string, slot: 'front' | 'back' | 'proof', file: File): Promise<string> {
+  const bad = imageOk(file)
+  if (bad) throw new Error(bad)
   const blob = await compressImage(file)
   const path = `${userId}/${slot}-${Date.now()}.jpg`
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: true })

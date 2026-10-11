@@ -115,6 +115,13 @@ export function downloadCsv(filename: string, rows: (string | number)[][]) {
 }
 
 // ===== Nén ảnh trước khi upload CCCD =====
+export const IMAGE_MAX_MB = 5
+export function imageOk(file: File): string | null {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return 'Chỉ nhận ảnh JPG, PNG hoặc WebP'
+  if (file.size > IMAGE_MAX_MB * 1024 * 1024) return `Ảnh quá lớn (tối đa ${IMAGE_MAX_MB} MB) — hãy chụp lại hoặc chọn ảnh nhẹ hơn`
+  return null
+}
+
 export async function compressImage(file: File, maxSide = 1280, quality = 0.82): Promise<Blob> {
   if (!file.type.startsWith('image/')) return file
   const img = await createImageBitmap(file)
