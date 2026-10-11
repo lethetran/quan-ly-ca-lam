@@ -113,6 +113,15 @@ export async function updateRegistration(id: string, patch: Partial<Registration
   return unwrap<Registration>(data, error)
 }
 
+/** Chủ đánh dấu tình trạng trả lương TỪNG NGƯỜI: đã chuyển khoản, không trả được (kèm lý do), hoặc hoàn tác */
+export async function setPersonPay(
+  regId: string,
+  patch: { pay_status: 'unpaid' | 'paid' | 'failed'; paid_at?: string | null; pay_fail_note?: string | null },
+): Promise<Registration> {
+  const { data, error } = await supabase.from('registrations').update(patch).eq('id', regId).select('*').single()
+  return unwrap<Registration>(data, error)
+}
+
 /** Lưu chấm công hàng loạt trong bước đối soát */
 export async function saveReconcileRows(
   rows: {

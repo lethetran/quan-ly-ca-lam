@@ -10,6 +10,17 @@ import type { Label, Profile, Registration, Shift } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
 import { effStatus, fmtD, fmtT, money, num, shiftTimes, ym, monthName } from '../lib/util'
 
+/** Trạng thái nhận tiền của chính người làm cho 1 ca */
+function payText(r: Registration, s: Shift): { text: string; bad?: boolean } {
+  if (s.status === 'paid') {
+    if (r.pay_status === 'failed') return { text: `Chưa nhận được${r.pay_fail_note ? ': ' + r.pay_fail_note : ''}`, bad: true }
+    return { text: 'Đã nhận ✓' }
+  }
+  if (s.status === 'paying') return { text: 'Công ty đang thanh toán…' }
+  if (s.status === 'reconciling') return { text: 'Đang đối soát' }
+  return { text: 'Chờ đối soát' }
+}
+
 export function WorkerShifts() {
   const { userId } = useSession()
   const [shifts, setShifts] = useState<Shift[] | null>(null)
@@ -183,7 +194,7 @@ export function WorkerMyShifts() {
                     <div className="text-sm">
                       <div className="font-semibold">{num(workedH)} giờ · {money(pay)}</div>
                       <div className="text-xs text-zinc-500">
-                        {eff.status === 'paid' ? 'Đã thanh toán ✓' : eff.status === 'paying' ? 'Công ty đang thanh toán…' : eff.status === 'reconciling' ? 'Đang đối soát' : 'Chờ đối soát'}
+                        {(() => { const pt = payText(r, s!); return <span className={pt.bad ? 'font-semibold text-red-600' : ''}>{pt.text}</span> })()}
                       </div>
                     </div>
                   ) : r.attendance ? (
@@ -314,7 +325,7 @@ export function WorkerStats() {
                   <td className="td"><AttendanceBadge a={r.attendance} /></td>
                   <td className="td">{num(h)}</td>
                   <td className="td font-semibold">{money(r.pay ?? (r.attendance === 'full' || r.attendance === 'half' ? h * s.rate : 0))}</td>
-                  <td className="td">{s.status === 'paid' ? 'Đã nhận ✓' : s.status === 'paying' ? 'Đang thanh toán' : 'Chưa'}</td>
+                  <td className="td">{(() => { const pt = payText(r, s); return <span className={pt.bad ? 'font-semibold text-red-600' : ''}>{pt.text}</span> })()}</td>
                 </tr>
               )
             })}

@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react'
 import ShiftDetail from '../components/ShiftDetail'
 import { Badge, Banner, Empty, Modal, Spinner, StatCard } from '../components/ui'
 import { AttendanceBadge, CancelZaloShare, ShiftZaloShare } from '../components/ZaloShare'
-import { audit, createShift, listProfiles, listRegistrations, listShifts, notify, updateRegistration, updateShift } from '../lib/api'
+import { audit, createShift, listProfiles, listRegistrations, listShifts, notify, setPersonPay, updateShift } from '../lib/api'
 import { useSession, useToast } from '../lib/store'
 
-import type { Profile, Registration, Shift } from '../lib/types'
+import type { PayStatus, Profile, Registration, Shift } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
 import { downloadCsv, effStatus, fmtD, fmtDT, fmtT, money, monthName, num, shiftTimes, ym } from '../lib/util'
 
@@ -112,6 +112,8 @@ export function OwnerShifts() {
   const [sel, setSel] = useState<Shift | null>(null)
   const [payFor, setPayFor] = useState<Shift | null>(null)
   const [payNote, setPayNote] = useState('')
+  const [payRows, setPayRows] = useState<Record<string, PayStatus>>({})
+  const [failNotes, setFailNotes] = useState<Record<string, string>>({})
   const [tick, setTick] = useState(0)
 
   const load = async () => {
@@ -139,15 +141,72 @@ export function OwnerShifts() {
     } catch (e) { push((e as Error).message, true) }
   }
 
-  const confirmPaid = async () => {
+  const payRegs = payFor
+    ? regs.filter((r) => r.shift_id === payFor.id && r.status === 'approved' && (r.attendance === 'full' || r.attendance === 'half'))
+    : []
+
+  const openPay = (s: Shift) => {
+    const rs = regs.filter((r) => r.shift_id === s.id && r.status === 'approved' && (r.attendance === 'full' || r.attendance === 'half'))
+    setPayRows(Object.fromEntries(rs.map((r) => [r.id, r.pay_status ?? 'unpaid'])))
+    setFailNotes(Object.fromEntries(rs.map((r) => [r.id, r.pay_fail_note ?? ''])))
+    setPayFor(s)
+    setPayNote('')
+  }
+
+  /** Lưu tình trạng trả lương 1 người — mỗi thay đổi báo ngay cho người đó */
+  const saveRow = async (r: Registration, status: PayStatus, quiet = false) => {
+    if (!payFor || !profile) return
+    if (status === 'failed' && !(failNotes[r.id] ?? '').trim()) {
+      push('Nhập lý do không thanh toán được cho ' + nameOf(r.worker_id), true)
+      return
+    }
+    try {
+      await setPersonPay(r.id, {
+        pay_status: status,
+        paid_at: status === 'paid' ? new Date().toISOString() : null,
+        pay_fail_note: status === 'failed' ? (failNotes[r.id] ?? '').trim() : null,
+      })
+      if (status === 'paid') {
+        const acc = profiles.find((p) => p.id === r.worker_id)?.bank_account
+        await notify([r.worker_id], 'paid', 'Đã nhận thanh toán ✓', `Ca "${payFor.title}" (${fmtD(payFor.work_date)}) đã được chuyển khoản ${money(r.pay ?? 0)}${acc ? ' vào STK ' + acc : ''}.`, payFor.id)
+      } else if (status === 'failed') {
+        await notify([r.worker_id], 'pay_failed', 'Ca này chưa thanh toán được', `Ca "${payFor.title}" (${fmtD(payFor.work_date)}): ${(failNotes[r.id] ?? '').trim()}. Liên hệ tuyển dụng để cập nhật thông tin nhận tiền.`, payFor.id)
+      }
+      await audit(profile.id, profile.full_name || profile.username,
+        status === 'paid' ? 'mark_person_paid' : status === 'failed' ? 'mark_person_failed' : 'mark_person_unpaid',
+        `${status === 'paid' ? 'Đã trả' : status === 'failed' ? 'Không trả được' : 'Bỏ đánh dấu'} ${nameOf(r.worker_id)} — ca ${payFor.title}${status === 'failed' ? ' (' + (failNotes[r.id] ?? '').trim() + ')' : ''}`)
+      setPayRows((m) => ({ ...m, [r.id]: status }))
+      if (!quiet) push(status === 'paid' ? `Đã đánh dấu: ${nameOf(r.worker_id)} đã nhận tiền` : `Đã cập nhật trạng thái của ${nameOf(r.worker_id)}`)
+    } catch (e) { push((e as Error).message, true) }
+  }
+
+  /** Luồng mặc định: cả ca đã thanh toán — tích tất cả người còn lại rồi chốt */
+  const payAllAndClose = async () => {
     if (!payFor) return
+    const unpaid = payRegs.filter((r) => (payRows[r.id] ?? 'unpaid') === 'unpaid')
+    for (const r of unpaid) await saveRow(r, 'paid', true)
+    await confirmPaid()
+  }
+
+  const confirmPaid = async () => {
+    if (!payFor || !profile) return
+    // chốt: tự lưu lại mọi trạng thái hiện có để chắc chắn đồng bộ database
+    for (const r of payRegs) {
+      const st = payRows[r.id] ?? 'unpaid'
+      if (st === 'failed') {
+        if (!(failNotes[r.id] ?? '').trim()) { push(`Nhập lý do không thanh toán được cho ${nameOf(r.worker_id)}`, true); return }
+        await setPersonPay(r.id, { pay_status: 'failed', paid_at: null, pay_fail_note: (failNotes[r.id] ?? '').trim() })
+      } else if (st === 'paid') {
+        await setPersonPay(r.id, { pay_status: 'paid', paid_at: r.paid_at ?? new Date().toISOString(), pay_fail_note: null })
+      }
+    }
     try {
       await updateShift(payFor.id, { status: 'paid', payment_note: payNote.trim() || null, paid_at: new Date().toISOString() })
-      const rs = regs.filter((r) => r.shift_id === payFor.id && r.status === 'approved' && (r.attendance === 'full' || r.attendance === 'half'))
-      await notify(rs.map((r) => r.worker_id), 'paid', 'Đã nhận thanh toán ✓', `Ca "${payFor.title}" (${fmtD(payFor.work_date)}) đã được công ty thanh toán${payNote.trim() ? ' — ' + payNote.trim() : ''}.`, payFor.id)
-      await audit(profile.id, profile.full_name || profile.username, 'mark_paid', `Ca ${payFor.title} — đã thanh toán ${money(rs.reduce((a, r) => a + (r.pay ?? 0), 0))}`)
-      push('Đã cập nhật: Đã thanh toán')
-      setPayFor(null); setPayNote('')
+      await audit(profile.id, profile.full_name || profile.username, 'mark_paid', `Chốt thanh toán ca ${payFor.title}`)
+      const nPaid = payRegs.filter((r) => (payRows[r.id] ?? 'unpaid') === 'paid').length
+      const nFail = payRegs.filter((r) => (payRows[r.id] ?? 'unpaid') === 'failed').length
+      push(`Đã chốt ca: Đã thanh toán — ${nPaid} người đã nhận tiền${nFail > 0 ? `, ${nFail} người chưa chuyển được (đã ghi lý do và báo người làm)` : ''}`)
+      setPayFor(null); setPayNote(''); setPayRows({}); setFailNotes({})
       reload()
     } catch (e) { push((e as Error).message, true) }
   }
@@ -192,7 +251,10 @@ export function OwnerShifts() {
                   )}
                   {s.status === 'cancelled' && <CancelZaloShare shift={s} />}
                   {s.status === 'paying' && (
-                    <button className="btn-primary !py-1.5 text-xs" onClick={() => { setPayFor(s); setPayNote('') }}><Banknote size={13} /> Cập nhật đã thanh toán</button>
+                    <button className="btn-primary !py-1.5 text-xs" onClick={() => openPay(s)}><Banknote size={13} /> Thanh toán cả ca</button>
+                  )}
+                  {s.status === 'paid' && (
+                    <button className="btn-ghost !py-1.5 text-xs" onClick={() => openPay(s)}><Banknote size={13} /> Trả lương từng người</button>
                   )}
                 </div>
               </div>
@@ -222,37 +284,92 @@ export function OwnerShifts() {
 
       <ShiftDetail shift={sel} regs={sel ? regs.filter((r) => r.shift_id === sel.id) : []} profiles={profiles} onClose={() => setSel(null)} onChanged={reload} />
 
-      <Modal open={!!payFor} onClose={() => setPayFor(null)} title="Xác nhận đã thanh toán" wide>
+      <Modal open={!!payFor} onClose={() => { setPayFor(null); setPayRows({}); setFailNotes({}) }} title={payFor?.status === 'paid' ? 'Trả lương từng người (sửa lại được)' : 'Thanh toán cả ca'} wide>
         {payFor && (() => {
-          const rs = regs.filter((r) => r.shift_id === payFor.id && r.status === 'approved' && (r.attendance === 'full' || r.attendance === 'half'))
-          const total = rs.reduce((acc, r) => acc + (r.pay ?? 0), 0)
+          const isPaid = payFor.status === 'paid'
+          const undecided = payRegs.filter((r) => (payRows[r.id] ?? 'unpaid') === 'unpaid')
+          const nPaid = payRegs.filter((r) => (payRows[r.id] ?? 'unpaid') === 'paid').length
+          const nFail = payRegs.filter((r) => (payRows[r.id] ?? 'unpaid') === 'failed').length
+          const grandTotal = payRegs.filter((r) => (payRows[r.id] ?? 'unpaid') === 'paid').reduce((acc, r) => acc + (r.pay ?? 0), 0)
           return (
             <div className="space-y-3">
-              <Banner kind="info">Kiểm tra danh sách chuyển khoản dưới đây trước khi bấm xác nhận.</Banner>
+              {!isPaid && (
+                <Banner kind="info">
+                  Mặc định <b>tất cả người có công đều được thanh toán</b>. Nếu có trường hợp đặc biệt
+                  (không chuyển được, tranh chấp…) thì <b>bỏ tích người đó và ghi lý do</b> — họ sẽ nhận thông báo riêng.
+                </Banner>
+              )}
+              {isPaid && <Banner kind="warn">Mỗi thay đổi được lưu ngay và gửi thông báo cho người đó.</Banner>}
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
-                  <thead><tr><th className="th">Người</th><th className="th">Chấm</th><th className="th">Giờ</th><th className="th">Ngân hàng</th><th className="th">Số TK</th><th className="th text-right">Tiền</th></tr></thead>
+                  <thead><tr>
+                    <th className="th w-12">Trả?</th>
+                    <th className="th">Người</th><th className="th">Chấm</th><th className="th">Giờ</th>
+                    <th className="th">Ngân hàng · Số TK</th><th className="th text-right">Tiền</th><th className="th">Tình trạng</th>
+                  </tr></thead>
                   <tbody>
-                    {rs.map((r) => {
+                    {payRegs.map((r) => {
                       const p = profiles.find((x) => x.id === r.worker_id)
+                      const st: PayStatus = payRows[r.id] ?? 'unpaid'
                       return (
-                        <tr key={r.id}>
-                          <td className="td">{p?.full_name}</td>
+                        <tr key={r.id} className={st === 'failed' ? 'bg-red-50/60' : st === 'paid' ? 'bg-emerald-50/40' : ''}>
+                          <td className="td text-center">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 accent-orange-600"
+                              checked={st === 'paid'}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  saveRow(r, 'paid')
+                                } else {
+                                  // bỏ tích: chuyển sang "không trả được" — bắt buộc nhập lý do trước khi chốt
+                                  setPayRows((m) => ({ ...m, [r.id]: 'failed' }))
+                                }
+                              }}
+                            />
+                          </td>
+                          <td className="td font-semibold">{p?.full_name}</td>
                           <td className="td"><AttendanceBadge a={r.attendance} /></td>
                           <td className="td">{num(r.hours ?? 0)}</td>
-                          <td className="td">{p?.bank_name || '—'}</td>
-                          <td className="td font-mono">{p?.bank_account || '—'}</td>
+                          <td className="td">{p?.bank_name || '—'} · <span className="font-mono">{p?.bank_account || '—'}</span></td>
                           <td className="td text-right font-bold">{money(r.pay ?? 0)}</td>
+                          <td className="td">
+                            {st === 'paid' && <span className="badge border-emerald-300 bg-emerald-600 text-white">Đã trả{r.paid_at ? ' ' + fmtDT(r.paid_at).slice(-5) : ''}</span>}
+                            {st === 'failed' && <span className="badge border-red-300 bg-red-600 text-white">Không trả được</span>}
+                            {st === 'unpaid' && <span className="text-xs text-zinc-400">chưa xử lý</span>}
+                            {st === 'failed' && (
+                              <input
+                                className="field mt-1 !py-1 text-xs"
+                                placeholder="Lý do không trả được *"
+                                value={failNotes[r.id] ?? ''}
+                                onChange={(e) => setFailNotes((m) => ({ ...m, [r.id]: e.target.value }))}
+                                onBlur={() => { if ((failNotes[r.id] ?? '').trim()) saveRow(r, 'failed', true) }}
+                              />
+                            )}
+                          </td>
                         </tr>
                       )
                     })}
-                    <tr className="bg-zinc-100"><td className="td font-bold" colSpan={5}>TỔNG</td><td className="td text-right font-bold text-accent">{money(total)}</td></tr>
+                    <tr className="bg-zinc-100">
+                      <td className="td font-bold" colSpan={5}>ĐỒNG Ý TRẢ: {nPaid}/{payRegs.length} người</td>
+                      <td className="td text-right font-bold text-accent">{money(grandTotal)}</td>
+                      <td className="td text-xs text-zinc-500">{nFail > 0 ? `${nFail} người bị loại (có lý do)` : ''}</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
-              <div className="flex gap-2">
-                <input className="field" placeholder="Ghi chú thanh toán (VD: đã CK đợt 1 lúc 15h)" value={payNote} onChange={(e) => setPayNote(e.target.value)} />
-                <button className="btn-primary shrink-0" onClick={confirmPaid}>Xác nhận đã thanh toán</button>
+              <input className="field" placeholder="Ghi chú chung (VD: đã CK đợt 1 lúc 15h)" value={payNote} onChange={(e) => setPayNote(e.target.value)} />
+              <div className="flex flex-wrap gap-2">
+                {!isPaid && (
+                  <button className="btn-primary flex-1" onClick={payAllAndClose}>
+                    Thanh toán cả ca — chốt ({money(grandTotal + undecided.reduce((a, r) => a + (r.pay ?? 0), 0))})
+                  </button>
+                )}
+                {!isPaid && (
+                  <button className="btn-dark flex-1" onClick={confirmPaid} disabled={undecided.length > 0}>
+                    {undecided.length > 0 ? `Chốt ca (còn ${undecided.length} người chưa xử lý…)` : 'Chốt ca — giữ nguyên các người bị bỏ tích'}
+                  </button>
+                )}
               </div>
             </div>
           )

@@ -100,6 +100,8 @@ export const ATTENDANCE_COLOR: Record<Attendance, string> = {
   absent_unexcused: 'bg-red-600 text-white',
 }
 
+export type PayStatus = 'unpaid' | 'paid' | 'failed'
+
 export interface Registration {
   id: string
   shift_id: string
@@ -113,6 +115,9 @@ export interface Registration {
   reviewed_by: string | null
   reconciled_by: string | null
   reconciled_at: string | null
+  pay_status: PayStatus | null
+  paid_at: string | null
+  pay_fail_note: string | null
   created_at: string
 }
 

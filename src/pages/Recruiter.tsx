@@ -235,7 +235,7 @@ export function ShiftPeople() {
         <h2 className="mb-2 font-display text-lg font-bold uppercase text-zinc-600">Đã duyệt / đã từ chối</h2>
         <div className="card overflow-x-auto">
           <table className="w-full border-collapse text-sm">
-            <thead><tr><th className="th">Người</th><th className="th">Trạng thái</th><th className="th">Đăng ký lúc</th></tr></thead>
+            <thead><tr><th className="th">Người</th><th className="th">Trạng thái</th><th className="th">Trả lương</th><th className="th">Đăng ký lúc</th></tr></thead>
             <tbody>
               {regs.filter((r) => r.status !== 'pending').map((r) => (
                 <tr key={r.id}>
@@ -245,6 +245,11 @@ export function ShiftPeople() {
                     </button>
                   </td>
                   <td className="td"><RegStatusBadge status={r.status} /></td>
+                  <td className="td">
+                    {r.pay_status === 'paid' ? <span className="badge border-emerald-300 bg-emerald-600 text-white">Đã trả</span>
+                     : r.pay_status === 'failed' ? <span className="badge border-red-300 bg-red-600 text-white" title={r.pay_fail_note ?? ''}>✗ {r.pay_fail_note || 'Không trả được'}</span>
+                     : <span className="text-xs text-zinc-400">—</span>}
+                  </td>
                   <td className="td text-zinc-500">{fmtDT(r.created_at)}</td>
                 </tr>
               ))}
@@ -432,13 +437,14 @@ export function Reconcile() {
 
   const exportCsv = () => {
     downloadCsv(`doi-soat-${shift.title.replace(/[^\w-]+/g, '_')}-${shift.work_date}.csv`, [
-      ['STT', 'Họ tên', 'SĐT', 'Ngân hàng', 'STK', 'Chấm công', 'Số giờ', 'Đơn giá', 'Tiền thanh toán', 'Ghi chú'],
+      ['STT', 'Họ tên', 'SĐT', 'Ngân hàng', 'STK', 'Chấm công', 'Số giờ', 'Đơn giá', 'Tiền thanh toán', 'Trả lương', 'Ghi chú'],
       ...rows.map((r, i) => {
         const p = nameOf(r.worker_id)
         const d = draft[r.id]
-        return [i + 1, p?.full_name ?? '', p?.phone ?? '', p?.bank_name ?? '', p?.bank_account ? `'${p.bank_account}` : '', ATTENDANCE_LABEL[d.attendance], d.hours, shift.rate, d.pay, d.note]
+        const paySt = r.pay_status === 'paid' ? 'Đã trả' : r.pay_status === 'failed' ? `Không trả được: ${r.pay_fail_note ?? ''}` : 'Chưa'
+        return [i + 1, p?.full_name ?? '', p?.phone ?? '', p?.bank_name ?? '', p?.bank_account ? `'${p.bank_account}` : '', ATTENDANCE_LABEL[d.attendance], d.hours, shift.rate, d.pay, paySt, d.note]
       }),
-      ['', '', '', '', '', 'TỔNG', '', '', total, ''],
+      ['', '', '', '', '', 'TỔNG', '', '', total, '', ''],
     ])
   }
 
@@ -475,11 +481,12 @@ export function Reconcile() {
               <th className="th w-28">Đơn giá</th>
               <th className="th w-32">Tiền thanh toán</th>
               <th className="th">Ghi chú</th>
+              <th className="th w-28">Trả lương</th>
               <th className="th w-24">Hồ sơ</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td className="td text-center text-zinc-400" colSpan={8}>Chưa duyệt ai vào ca này.</td></tr>}
+            {rows.length === 0 && <tr><td className="td text-center text-zinc-400" colSpan={9}>Chưa duyệt ai vào ca này.</td></tr>}
             {rows.map((r, i) => {
               const p = nameOf(r.worker_id)
               const d = draft[r.id] ?? { attendance: 'full' as Attendance, hours: autoHours, pay: r.pay ?? Math.round(autoHours * shift.rate), note: '' }
@@ -499,6 +506,11 @@ export function Reconcile() {
                   <td className="td text-right text-zinc-500">{money(shift.rate)}</td>
                   <td className="td"><input className="field !py-1 text-right font-bold" type="number" step="1000" min="0" disabled={!editable} value={d.pay} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, pay: Number(e.target.value) } }))} /></td>
                   <td className="td"><input className="field !py-1" disabled={!editable} value={d.note} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, note: e.target.value } }))} placeholder="Lý do vắng, trễ…" /></td>
+                  <td className="td">
+                    {r.pay_status === 'paid' ? <span className="badge border-emerald-300 bg-emerald-600 text-white">Đã trả</span>
+                     : r.pay_status === 'failed' ? <span className="badge border-red-300 bg-red-600 text-white" title={r.pay_fail_note ?? ''}>✗ {r.pay_fail_note || 'Không trả được'}</span>
+                     : <span className="text-xs text-zinc-400">—</span>}
+                  </td>
                   <td className="td text-center"><button className="btn-ghost !px-2 !py-1 text-xs" onClick={() => setSelWorker(r.worker_id)}>Xem</button></td>
                 </tr>
               )
@@ -506,7 +518,7 @@ export function Reconcile() {
             <tr className="bg-zinc-100 font-bold">
               <td className="td" colSpan={5}>TỔNG CẦN THANH TOÁN</td>
               <td className="td text-right text-accent">{money(total)}</td>
-              <td className="td" colSpan={2}></td>
+              <td className="td" colSpan={3}></td>
             </tr>
           </tbody>
         </table>
