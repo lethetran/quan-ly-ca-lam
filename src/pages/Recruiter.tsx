@@ -486,7 +486,8 @@ export function Reconcile() {
         </Banner>
       )}
 
-      <div className="card overflow-x-auto">
+      {/* Bảng đầy đủ cho máy tính */}
+      <div className="card hidden overflow-x-auto md:block">
         <table className="w-full min-w-[900px] border-collapse">
           <thead>
             <tr>
@@ -538,6 +539,55 @@ export function Reconcile() {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* Chế độ thẻ cho điện thoại — cùng dữ liệu, không cần cuộn ngang */}
+      <div className="space-y-2.5 md:hidden">
+        {rows.length === 0 && <div className="card p-5 text-center text-sm text-zinc-400">Chưa duyệt ai vào ca này.</div>}
+        {rows.map((r, i) => {
+          const p = nameOf(r.worker_id)
+          const d = draft[r.id] ?? { attendance: 'full' as Attendance, hours: autoHours, pay: r.pay ?? Math.round(autoHours * shift.rate), note: '' }
+          return (
+            <div key={r.id} className={`card p-3.5 ${d.attendance.startsWith('absent') ? 'border-red-200 bg-red-50/50' : ''}`}>
+              <div className="flex items-start justify-between gap-2">
+                <button className="font-display text-lg font-bold leading-6 hover:text-accent" onClick={() => setSelWorker(r.worker_id)}>
+                  {i + 1}. {p?.full_name || r.worker_id.slice(0, 8)}
+                </button>
+                {r.pay_status === 'paid' ? <span className="badge border-emerald-300 bg-emerald-600 text-white">Đã trả</span>
+                 : r.pay_status === 'failed' ? <span className="badge border-red-300 bg-red-600 text-white">✗ Không trả được</span>
+                 : null}
+              </div>
+              <div className="mt-0.5 text-xs text-zinc-500">{p?.bank_name}{p?.bank_account ? ` · ${p.bank_account}` : ''}</div>
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <div>
+                  <span className="label">Chấm công</span>
+                  <select className="field !py-1.5" disabled={!editable} value={d.attendance} onChange={(e) => setRow(r.id, { attendance: e.target.value as Attendance })}>
+                    {Object.entries(ATTENDANCE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <span className="label">Số giờ</span>
+                  <input className="field !py-1.5 text-right" type="number" step="0.5" min="0" inputMode="decimal" disabled={!editable} value={d.hours} onChange={(e) => setRow(r.id, { hours: clampNum(Number(e.target.value.replace(',', '.')), 0, 24) })} />
+                </div>
+                <div>
+                  <span className="label">Tiền thanh toán</span>
+                  <input className="field !py-1.5 text-right font-bold" type="number" step="1000" min="0" inputMode="numeric" disabled={!editable} value={d.pay} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, pay: clampNum(Number(e.target.value.replace(',', '.')), 0, 1000000000) } }))} />
+                </div>
+                <div>
+                  <span className="label">Đơn giá</span>
+                  <div className="field !py-1.5 text-right text-zinc-500">{money(shift.rate)}</div>
+                </div>
+              </div>
+              <input className="field mt-2 !py-1.5" disabled={!editable} value={d.note} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, note: e.target.value } }))} placeholder="Lý do vắng, trễ…" maxLength={300} />
+            </div>
+          )
+        })}
+        {rows.length > 0 && (
+          <div className="card flex items-center justify-between bg-zinc-100 p-3.5">
+            <span className="font-bold">TỔNG CẦN THANH TOÁN</span>
+            <span className="font-display text-xl font-bold text-accent">{money(total)}</span>
+          </div>
+        )}
       </div>
 
       <Modal open={!!selWorker} onClose={() => setSelWorker(null)} title="Hồ sơ người làm" wide>
