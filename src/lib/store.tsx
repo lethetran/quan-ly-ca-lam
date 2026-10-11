@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { supabase } from './supabase'
 import { ensureProfile } from './api'
 import type { Profile } from './types'
-import { toEmail } from './util'
+import { authErrorVi, toEmail } from './util'
 
 // ===== Toast =====
 type Toast = { id: number; msg: string; bad?: boolean }
@@ -91,7 +91,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(
     async (login: string, password: string) => {
       const { error, data } = await supabase.auth.signInWithPassword({ email: toEmail(login), password })
-      if (error) throw new Error(error.message)
+      if (error) throw new Error(authErrorVi(error.message))
       if (data.user?.email) await loadProfile(data.user.id, data.user.email)
     },
     [loadProfile],
@@ -100,7 +100,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signUp = useCallback(
     async (login: string, password: string) => {
       const { error, data } = await supabase.auth.signUp({ email: toEmail(login), password })
-      if (error) throw new Error(error.message)
+      if (error) throw new Error(authErrorVi(error.message))
       if (data.session?.user?.email) await loadProfile(data.session.user.id, data.session.user.email)
       else if (data.user?.email) await loadProfile(data.user.id, data.user.email)
     },

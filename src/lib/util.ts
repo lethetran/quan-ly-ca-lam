@@ -1,14 +1,28 @@
 import type { Shift, ShiftStatus } from './types'
 
-// ===== Tài khoản quản trị cao nhất =====
-// admin (đăng nhập trực tiếp) hoặc admin@example.com
-export const ADMIN_EMAILS = ['admin@example.com', 'admin@nhanvien.local']
-
+// ===== Tài khoản =====
+// Quyền admin KHÔNG quyết định ở client — server quyết định qua bảng app_admins (seed thủ công).
 /** Đăng nhập bằng email hoặc tên đăng nhập thuần (SĐT, nickname) */
 export function toEmail(login: string): string {
   const s = login.trim().toLowerCase()
   if (s.includes('@')) return s
   return `${s}@nhanvien.local`
+}
+
+/** Tên đăng nhập hợp lệ: 3–24 ký tự, chữ thường/số/dấu chấm/gạch dưới */
+export function usernameOk(name: string): boolean {
+  return /^[a-z0-9._]{3,24}$/.test(name.trim().toLowerCase())
+}
+
+/** Thông báo lỗi đăng nhập/đăng ký thân thiện, không lộ chi tiết kỹ thuật */
+export function authErrorVi(msg: string): string {
+  const m = msg.toLowerCase()
+  if (m.includes('invalid login credentials')) return 'Tài khoản hoặc mật khẩu không đúng.'
+  if (m.includes('already registered') || m.includes('already exists') || m.includes('duplicate key')) return 'Tên đăng nhập này đã được dùng — hãy đăng nhập, hoặc chọn tên khác.'
+  if (m.includes('password') && m.includes('least')) return 'Mật khẩu phải tối thiểu 8 ký tự.'
+  if (m.includes('rate limit') || m.includes('too many')) return 'Bạn thử quá nhiều lần — đợi 1 phút rồi thử lại nhé.'
+  if (m.includes('failed to fetch') || m.includes('network')) return 'Mất kết nối mạng — kiểm tra internet rồi thử lại.'
+  return 'Không thực hiện được. Vui lòng thử lại sau ít phút.'
 }
 
 export function shortAccount(email: string | null | undefined): string {

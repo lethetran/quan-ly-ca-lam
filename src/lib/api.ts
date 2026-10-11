@@ -1,6 +1,6 @@
 import { supabase, BUCKET } from './supabase'
-import type { AuditLog, Attendance, Label, Notif, Profile, Registration, Shift } from './types'
-import { ADMIN_EMAILS, compressImage } from './util'
+import type { AuditLog, Attendance, Label, Notif, PayStatus, Profile, Registration, Shift } from './types'
+import { compressImage } from './util'
 
 function unwrap<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message)
@@ -8,14 +8,14 @@ function unwrap<T>(data: T | null, error: { message: string } | null): T {
 }
 
 // ===== Hồ sơ =====
+// Vai trò do server quyết định (trigger đọc bảng app_admins) — client không gửi role.
 export async function ensureProfile(userId: string, email: string): Promise<Profile | null> {
   const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
   if (data) return data as Profile
   const username = email.split('@')[0]
-  const role = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'worker'
   const { data: created, error } = await supabase
     .from('profiles')
-    .insert({ id: userId, username, role, kyc_status: 'unsubmitted' })
+    .insert({ id: userId, username, kyc_status: 'unsubmitted' })
     .select('*')
     .single()
   if (error) throw new Error(error.message)
