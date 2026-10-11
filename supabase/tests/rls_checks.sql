@@ -79,7 +79,7 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', worker1, 'role','authenticated')::text, true);
   begin
     insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by)
-    values ('ZZTEST worker tạo ca', 'x', current_date, '08:00', '12:00', 1000, 1, worker1);
+    values ('ZZTEST worker tạo ca', 'Hà Nội', current_date, '08:00', '12:00', 1000, 1, worker1);
     raise exception 'FAIL 4a: worker tạo được ca';
   exception when others then
     if sqlerrm like 'FAIL%' then raise; end if;
@@ -98,7 +98,7 @@ begin
   perform set_config('role','authenticated', true);
   perform set_config('request.jwt.claims', json_build_object('sub', owner1, 'role','authenticated')::text, true);
   insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by, status)
-  values ('ZZTEST luong trang thai', 'x', current_date + 7, '08:00', '12:00', 10000, 5, owner1, 'pending_approval')
+  values ('ZZTEST luong trang thai', 'Hà Nội', current_date + 7, '08:00', '12:00', 10000, 5, owner1, 'pending_approval')
   returning id into s1;
   perform set_config('role','postgres', true);
   perform set_config('request.jwt.claims', '', true);
@@ -162,7 +162,7 @@ begin
   perform set_config('role','authenticated', true);
   perform set_config('request.jwt.claims', json_build_object('sub', owner1, 'role','authenticated')::text, true);
   insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by, status)
-  values ('ZZTEST trung gio', 'x', current_date + 8, '09:00', '11:00', 10000, 5, owner1, 'recruiting')
+  values ('ZZTEST trung gio', 'Hà Nội', current_date + 8, '09:00', '11:00', 10000, 5, owner1, 'recruiting')
   returning id into s2;
   perform set_config('role','postgres', true);
   perform set_config('request.jwt.claims', '', true);
@@ -176,7 +176,7 @@ begin
   perform set_config('role','authenticated', true);
   perform set_config('request.jwt.claims', json_build_object('sub', owner1, 'role','authenticated')::text, true);
   insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by, status)
-  values ('ZZTEST trung gio 2', 'x', current_date + 8, '10:00', '12:00', 10000, 5, owner1, 'recruiting')
+  values ('ZZTEST trung gio 2', 'Hà Nội', current_date + 8, '10:00', '12:00', 10000, 5, owner1, 'recruiting')
   returning id into s1;
   perform set_config('role','postgres', true);
   perform set_config('request.jwt.claims', '', true);
@@ -195,7 +195,7 @@ begin
   perform set_config('role','authenticated', true);
   perform set_config('request.jwt.claims', json_build_object('sub', owner1, 'role','authenticated')::text, true);
   insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by, status)
-  values ('ZZTEST du nguoi', 'x', current_date + 9, '08:00', '09:00', 10000, 1, owner1, 'recruiting')
+  values ('ZZTEST du nguoi', 'Hà Nội', current_date + 9, '08:00', '09:00', 10000, 1, owner1, 'recruiting')
   returning id into s2;
   perform set_config('role','postgres', true);
   perform set_config('request.jwt.claims', '', true);

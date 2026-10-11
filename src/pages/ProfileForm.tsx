@@ -34,10 +34,12 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
 
   const submit = async () => {
     if (!profile) return
-    if (!f.full_name.trim() || !/^\d{9,12}$/.test(f.cccd.trim()) || !/^\d{9,11}$/.test(f.phone.trim()) || !f.address.trim() || !f.bank_name.trim() || !f.bank_account.trim()) {
-      push('Điền đủ: họ tên, CCCD (9-12 số), SĐT, địa chỉ, ngân hàng, số tài khoản', true)
-      return
-    }
+    if (!f.full_name.trim() || f.full_name.trim().length < 2 || f.full_name.trim().length > 100) { push('Họ tên từ 2 đến 100 ký tự', true); return }
+    if (!/^\d{9,12}$/.test(f.cccd.trim())) { push('Số CCCD gồm 9–12 chữ số', true); return }
+    if (!/^\d{9,11}$/.test(f.phone.trim())) { push('Số điện thoại gồm 9–11 chữ số', true); return }
+    if (!f.address.trim() || f.address.trim().length > 200) { push('Địa chỉ bắt buộc, tối đa 200 ký tự', true); return }
+    if (!f.bank_name.trim() || f.bank_name.trim().length > 50) { push('Nhập tên ngân hàng (tối đa 50 ký tự)', true); return }
+    if (!/^\d{6,19}$/.test(f.bank_account.trim())) { push('Số tài khoản gồm 6–19 chữ số (không có chữ, không khoảng trắng)', true); return }
     const alreadyApproved = profile.kyc_status === 'approved'
     if (!alreadyApproved && (!front || !back)) { push('Cần tải lên ảnh CCCD mặt trước VÀ mặt sau', true); return }
     setBusy(true)

@@ -11,7 +11,7 @@ import {
 import { useSession, useToast } from '../lib/store'
 import type { Attendance, Label, Profile, Registration, Shift } from '../lib/types'
 import { ATTENDANCE_LABEL, SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
-import { downloadCsv, effStatus, fmtD, fmtDT, fmtT, money, monthName, num, shiftTimes, ym } from '../lib/util'
+import { clampNum, downloadCsv, effStatus, fmtD, fmtDT, fmtT, money, monthName, num, shiftTimes, ym } from '../lib/util'
 
 function useBase() {
   const { profile } = useSession()
@@ -518,10 +518,10 @@ export function Reconcile() {
                       {Object.entries(ATTENDANCE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </td>
-                  <td className="td"><input className="field !py-1 text-right" type="number" step="0.5" min="0" disabled={!editable} value={d.hours} onChange={(e) => setRow(r.id, { hours: Number(e.target.value) })} /></td>
+                  <td className="td"><input className="field !py-1 text-right" type="number" step="0.5" min="0" disabled={!editable} value={d.hours} onChange={(e) => setRow(r.id, { hours: clampNum(Number(e.target.value.replace(',', '.')), 0, 24) })} /></td>
                   <td className="td text-right text-zinc-500">{money(shift.rate)}</td>
-                  <td className="td"><input className="field !py-1 text-right font-bold" type="number" step="1000" min="0" disabled={!editable} value={d.pay} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, pay: Number(e.target.value) } }))} /></td>
-                  <td className="td"><input className="field !py-1" disabled={!editable} value={d.note} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, note: e.target.value } }))} placeholder="Lý do vắng, trễ…" /></td>
+                  <td className="td"><input className="field !py-1 text-right font-bold" type="number" step="1000" min="0" disabled={!editable} value={d.pay} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, pay: clampNum(Number(e.target.value.replace(',', '.')), 0, 1000000000) } }))} /></td>
+                  <td className="td"><input className="field !py-1" disabled={!editable} value={d.note} onChange={(e) => setDraft((dd) => ({ ...dd, [r.id]: { ...d, note: e.target.value } }))} placeholder="Lý do vắng, trễ…" maxLength={300} /></td>
                   <td className="td">
                     {r.pay_status === 'paid' ? <span className="badge border-emerald-300 bg-emerald-600 text-white">Đã trả</span>
                      : r.pay_status === 'failed' ? <span className="badge border-red-300 bg-red-600 text-white" title={r.pay_fail_note ?? ''}>✗ {r.pay_fail_note || 'Không trả được'}</span>

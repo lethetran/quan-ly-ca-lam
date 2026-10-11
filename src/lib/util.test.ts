@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  authErrorVi, effStatus, imageOk, maskCccd, money, num, passwordOk,
-  regOpen, shiftTimes, toEmail, usernameOk,
+  authErrorVi, clampNum, digitsOk, effStatus, imageOk, maskCccd, money, num, passwordOk,
+  regOpen, shiftFormError, shiftTimes, toEmail, todayVN, usernameOk,
 } from './util'
 import type { Shift } from './types'
 
@@ -90,5 +90,41 @@ describe('hiển thị & bảo mật nhỏ', () => {
     expect(imageOk(new File([new Uint8Array(8)], 'a.gif', { type: 'image/gif' }))).toContain('JPG')
     expect(imageOk(new File([new Uint8Array(6 * 1024 * 1024)], 'a.jpg', { type: 'image/jpeg' }))).toContain('quá lớn')
     expect(imageOk(new File([new Uint8Array(8)], 'a.jpg', { type: 'image/jpeg' }))).toBeNull()
+  })
+})
+
+describe('chặn giá trị sai/âm', () => {
+  it('clampNum chặn âm và vượt trần, chữ rác về min', () => {
+    expect(clampNum(-5000, 0, 24)).toBe(0)
+    expect(clampNum(99, 0, 24)).toBe(24)
+    expect(clampNum(NaN, 0, 24)).toBe(0)
+    expect(clampNum(5, 0, 24)).toBe(5)
+  })
+  it('digitsOk: STK/CCCD chỉ chữ số đúng độ dài', () => {
+    expect(digitsOk('0912345678901', 6, 19)).toBe(true)
+    expect(digitsOk('12ab901', 6, 19)).toBe(false)
+    expect(digitsOk(' -5000 ', 6, 19)).toBe(false)
+    expect(digitsOk('12345', 6, 19)).toBe(false)
+  })
+  it('form tạo ca: chặn âm, 0, trống, ngày quá khứ, giờ trùng', () => {
+    const base = {
+      title: 'Ca hợp lệ', location: 'Hà Nội', work_date: '2026-12-01',
+      start_time: '08:00', end_time: '12:00', rate: 40000, capacity: 5,
+    }
+    expect(shiftFormError(base)).toBeNull()
+    expect(shiftFormError({ ...base, rate: -40000 })).toContain('số nguyên dương')
+    expect(shiftFormError({ ...base, rate: 0 })).toContain('số nguyên dương')
+    expect(shiftFormError({ ...base, rate: 35000.5 })).toContain('số nguyên dương')
+    expect(shiftFormError({ ...base, rate: 200000000 })).toContain('số nguyên dương')
+    expect(shiftFormError({ ...base, capacity: 0 })).toContain('từ 1 đến 1000')
+    expect(shiftFormError({ ...base, capacity: -5 })).toContain('từ 1 đến 1000')
+    expect(shiftFormError({ ...base, title: '  ' })).toContain('Tên ca')
+    expect(shiftFormError({ ...base, title: 'a' })).toContain('Tên ca')
+    expect(shiftFormError({ ...base, location: '' })).toContain('Địa điểm')
+    expect(shiftFormError({ ...base, work_date: '1999-01-01' })).toContain('ngày đã qua')
+    expect(shiftFormError({ ...base, work_date: todayVN() })).toBeNull()
+    expect(shiftFormError({ ...base, start_time: '08:00', end_time: '08:00' })).toContain('khác giờ bắt đầu')
+    expect(shiftFormError({ ...base, contact_phone: 'abc' })).toContain('9–11 chữ số')
+    expect(shiftFormError({ ...base, contact_phone: undefined })).toBeNull()
   })
 })

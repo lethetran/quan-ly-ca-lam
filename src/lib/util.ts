@@ -146,3 +146,43 @@ export const PASSWORD_HINT = 'Tối thiểu 8 ký tự, gồm cả chữ và s�
 export function passwordOk(pw: string): boolean {
   return pw.length >= 8 && /[a-zA-Z]/.test(pw) && /\d/.test(pw)
 }
+
+// ===== Kiểm tra/kẹp dữ liệu nhập (chặn giá trị âm, rác trước khi tới DB) =====
+export function clampNum(v: number, min: number, max: number): number {
+  if (!Number.isFinite(v)) return min
+  return Math.min(max, Math.max(min, v))
+}
+
+export function digitsOk(s: string, min: number, max: number): boolean {
+  return new RegExp(`^[0-9]{${min},${max}}$`).test(s.trim())
+}
+
+export function todayVN(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+}
+
+export interface ShiftFormInput {
+  title: string
+  location: string
+  work_date: string
+  start_time: string
+  end_time: string
+  rate: number
+  capacity: number
+  contact_phone?: string
+}
+
+/** Trả về thông báo lỗi đầu tiên của form tạo ca, hoặc null nếu hợp lệ */
+export function shiftFormError(f: ShiftFormInput): string | null {
+  const title = f.title.trim()
+  const loc = f.location.trim()
+  if (title.length < 2 || title.length > 120) return 'Tên ca từ 2 đến 120 ký tự'
+  if (loc.length < 2 || loc.length > 200) return 'Địa điểm từ 2 đến 200 ký tự'
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f.work_date)) return 'Chọn ngày làm'
+  if (f.work_date < todayVN()) return 'Không tạo được ca cho ngày đã qua'
+  if (f.start_time === f.end_time) return 'Giờ kết thúc phải khác giờ bắt đầu (ca qua đêm thì chọn ngày mai kết thúc sau 00:00)'
+  if (!Number.isInteger(f.rate) || f.rate <= 0 || f.rate > 100000000) return 'Đơn giá phải là số nguyên dương, tối đa 100.000.000đ/giờ'
+  if (!Number.isInteger(f.capacity) || f.capacity < 1 || f.capacity > 1000) return 'Số lượng cần từ 1 đến 1000 người'
+  if (f.contact_phone && !digitsOk(f.contact_phone, 9, 11)) return 'SĐT liên hệ gồm 9–11 chữ số'
+  return null
+}

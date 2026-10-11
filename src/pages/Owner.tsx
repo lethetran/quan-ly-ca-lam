@@ -8,7 +8,7 @@ import { useSession, useToast } from '../lib/store'
 
 import type { PayStatus, Profile, Registration, Shift } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
-import { downloadCsv, effStatus, fmtD, fmtDT, fmtT, money, monthName, num, shiftTimes, ym } from '../lib/util'
+import { downloadCsv, effStatus, fmtD, fmtDT, fmtT, money, monthName, num, shiftFormError, shiftTimes, ym } from '../lib/util'
 
 export function CreateShift() {
   const { profile } = useSession()
@@ -27,11 +27,14 @@ export function CreateShift() {
 
   const submit = async () => {
     if (!profile) return
-    if (!f.title.trim() || !f.location.trim() || !f.work_date || !f.start_time || !f.end_time || !f.rate || !f.capacity) {
-      push('Điền đủ: tên ca, địa điểm, ngày, giờ, đơn giá, số lượng', true)
-      return
-    }
-    if (Number(f.rate) <= 0 || Number(f.capacity) <= 0) { push('Đơn giá và số lượng phải lớn hơn 0', true); return }
+    const rateNum = Math.round(Number(f.rate))
+    const capNum = Math.round(Number(f.capacity))
+    const err = shiftFormError({
+      title: f.title, location: f.location, work_date: f.work_date,
+      start_time: f.start_time, end_time: f.end_time,
+      rate: rateNum, capacity: capNum, contact_phone: f.contact_phone || undefined,
+    })
+    if (err) { push(err, true); return }
     setBusy(true)
     try {
       const s = await createShift(
@@ -45,8 +48,8 @@ export function CreateShift() {
           start_time: f.start_time + ':00',
           end_time: f.end_time + ':00',
           hours_override: null,
-          rate: Number(f.rate),
-          capacity: Number(f.capacity),
+          rate: rateNum,
+          capacity: capNum,
           reg_deadline: f.reg_deadline ? new Date(f.reg_deadline).toISOString() : null,
           created_by: profile.id,
         },
@@ -77,8 +80,8 @@ export function CreateShift() {
       </div>
       <div className="card space-y-3.5 p-5">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2"><span className="label">Tên ca *</span><input className="field" value={f.title} onChange={set('title')} placeholder="VD: Hỗ trợ hội chợ — cổng B" /></div>
-          <div className="sm:col-span-2"><span className="label">Địa điểm *</span><input className="field" value={f.location} onChange={set('location')} placeholder="Địa chỉ cụ thể nơi làm việc" /></div>
+          <div className="sm:col-span-2"><span className="label">Tên ca *</span><input className="field" value={f.title} onChange={set('title')} placeholder="VD: Hỗ trợ hội chợ — cổng B" maxLength={120} /></div>
+          <div className="sm:col-span-2"><span className="label">Địa điểm *</span><input className="field" value={f.location} onChange={set('location')} placeholder="Địa chỉ cụ thể nơi làm việc" maxLength={200} /></div>
           <div><span className="label">Ngày làm *</span><input type="date" className="field" value={f.work_date} onChange={set('work_date')} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><span className="label">Bắt đầu *</span><input type="time" className="field" value={f.start_time} onChange={set('start_time')} /></div>
@@ -91,7 +94,7 @@ export function CreateShift() {
             <div><span className="label">Người liên hệ</span><input className="field" value={f.contact_name} onChange={set('contact_name')} /></div>
             <div><span className="label">SĐT liên hệ</span><input className="field" value={f.contact_phone} onChange={set('contact_phone')} inputMode="tel" /></div>
           </div>
-          <div className="sm:col-span-2"><span className="label">Lưu ý cho người làm (trang phục, công việc…)</span><textarea className="field h-20" value={f.note} onChange={set('note')} /></div>
+          <div className="sm:col-span-2"><span className="label">Lưu ý cho người làm (trang phục, công việc…)</span><textarea className="field h-20" maxLength={500} value={f.note} onChange={set('note')} /></div>
         </div>
         <div className="rounded-lg bg-ink px-4 py-3 text-sm text-paper">
           Ca kéo dài <b>{autoH} giờ</b> · đơn giá <b className="text-accent">{money(Number(f.rate) || 0)}/giờ</b> · mỗi người nhận <b className="text-accent">{money((Number(f.rate) || 0) * autoH)}</b> nếu đi đủ ca · tổng ước tính <b>{money((Number(f.rate) || 0) * autoH * (Number(f.capacity) || 0))}</b>
