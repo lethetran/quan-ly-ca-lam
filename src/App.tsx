@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { Spinner, Banner } from './components/ui'
 import { SessionProvider, ToastProvider, useSession } from './lib/store'
@@ -10,6 +10,42 @@ import { CreateShift, OwnerShifts, OwnerStats } from './pages/Owner'
 import { Audit, Kyc, Users } from './pages/Admin'
 import { Guide, MyProfile, Notifications } from './pages/Shared'
 import type { Role } from './lib/types'
+import React from 'react'
+
+// Chặn lỗi render ngoài mong muốn — người dùng luôn thấy màn hình phục hồi, không trắng trang
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err: Error | null }> {
+  state = { err: null as Error | null }
+  static getDerivedStateFromError(err: Error) { return { err } }
+  render() {
+    if (this.state.err) {
+      return (
+        <div className="mx-auto max-w-lg p-6">
+          <div className="card p-6 text-center">
+            <h1 className="text-xl font-bold">Có lỗi không mong muốn</h1>
+            <p className="mt-2 text-sm text-zinc-500">Trang gặp sự cố tạm thời. Tải lại là dùng tiếp bình thường — dữ liệu của bạn không mất.</p>
+            <div className="mt-4 flex justify-center gap-2">
+              <button className="btn-primary" onClick={() => location.reload()}>Tải lại trang</button>
+              <button className="btn-ghost" onClick={() => { this.setState({ err: null }); location.hash = '#/' }}>Về trang chính</button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+function NotFound() {
+  const { profile } = useSession()
+  return (
+    <div className="mx-auto max-w-md py-16 text-center">
+      <div className="font-display text-6xl font-bold text-zinc-300">404</div>
+      <h1 className="mt-2 text-xl font-bold">Không có trang này</h1>
+      <p className="mt-1 text-sm text-zinc-500">Đường dẫn sai hoặc trang đã bị đổi tên.</p>
+      <Link className="btn-primary mt-4 inline-flex" to={profile ? '/' : '/guide'}>Về trang chính</Link>
+    </div>
+  )
+}
 
 function homeFor(role: Role): string {
   switch (role) {
@@ -76,7 +112,7 @@ function Shell() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<MyProfile />} />
         <Route path="/guide" element={<Guide />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
   )
@@ -84,13 +120,15 @@ function Shell() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <SessionProvider>
-        <ConfigNotice />
-        <HashRouter>
-          <Shell />
-        </HashRouter>
-      </SessionProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <SessionProvider>
+          <ConfigNotice />
+          <HashRouter>
+            <Shell />
+          </HashRouter>
+        </SessionProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   )
 }

@@ -1,5 +1,7 @@
 name: Deploy GitHub Pages
 
+# LƯU Ý: GitHub Actions của tài khoản này đang khóa vì billing
+# (xem Settings → Billing). Sau khi mở khóa, workflow tự chạy lại.
 on:
   push:
     branches: [main]
@@ -24,7 +26,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Kiểm tra type + test đơn vị trước khi deploy
+        run: |
+          npm run build
+          npm test
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

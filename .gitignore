@@ -1,7 +1,7 @@
 node_modules/
 dist/
 .env
+.env.local
+*.tsbuildinfo
 .db-password
 .DS_Store
-.vercel
-.env*
