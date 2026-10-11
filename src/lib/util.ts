@@ -31,12 +31,11 @@ export function shortAccount(email: string | null | undefined): string {
 }
 
 // ===== Thời gian / ca làm =====
+// Toàn hệ thống quy về múi giờ Việt Nam (UTC+7) bất kể thiết bị của người dùng
+const VN_OFFSET = '+07:00'
 export function shiftTimes(s: Shift): { start: Date; end: Date; hours: number } {
-  const [y, m, d] = s.work_date.split('-').map(Number)
-  const [sh, sm] = s.start_time.split(':').map(Number)
-  const [eh, em] = s.end_time.split(':').map(Number)
-  const start = new Date(y, m - 1, d, sh, sm, 0)
-  let end = new Date(y, m - 1, d, eh, em, 0)
+  const start = new Date(`${s.work_date}T${s.start_time.slice(0, 5)}:00${VN_OFFSET}`)
+  let end = new Date(`${s.work_date}T${s.end_time.slice(0, 5)}:00${VN_OFFSET}`)
   if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 24 * 3600 * 1000) // ca qua đêm
   const auto = (end.getTime() - start.getTime()) / 3600000
   return { start, end, hours: s.hours_override ?? Math.round(auto * 100) / 100 }

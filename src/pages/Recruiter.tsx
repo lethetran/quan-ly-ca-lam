@@ -325,6 +325,22 @@ export function ReconcileList() {
                 {s.status === 'ongoing' && (
                   <button className="btn-dark" onClick={() => startReconcile(s)}>Bắt đầu đối soát</button>
                 )}
+                {s.status === 'paying' && (
+                  <button
+                    className="btn-ghost"
+                    title="Cần sửa chấm công? Mở lại ca sang Đang đối soát (chủ sẽ thấy ca quay về chờ thanh toán)"
+                    onClick={async () => {
+                      try {
+                        await updateShift(s.id, { status: 'reconciling' })
+                        await audit(profile.id, profile.full_name || profile.username, 'reopen_reconcile', `Mở lại đối soát ca ${s.title}`)
+                        push('Đã mở lại đối soát — giờ bạn sửa được bảng công')
+                        reload()
+                      } catch (e) { push((e as Error).message, true) }
+                    }}
+                  >
+                    Mở lại đối soát (sửa)
+                  </button>
+                )}
                 <a className="btn-ghost" href={`#/recruiter/reconcile/${s.id}`}>
                   {s.status === 'reconciling' ? 'Mở bảng đối soát' : 'Xem kết quả'}
                 </a>

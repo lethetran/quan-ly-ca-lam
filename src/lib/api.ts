@@ -66,8 +66,9 @@ export async function signedUrls(paths: string[]): Promise<Record<string, string
 }
 
 // ===== Ca làm =====
+const LIST_LIMIT = 500 // chặn truy vấn vô hạn; nội bộ vài trăm dòng là đủ cho MVP
 export async function listShifts(): Promise<Shift[]> {
-  const { data, error } = await supabase.from('shifts').select('*').order('work_date').order('start_time')
+  const { data, error } = await supabase.from('shifts').select('*').order('work_date').order('start_time').limit(LIST_LIMIT)
   return unwrap<Shift[]>(data, error) ?? []
 }
 

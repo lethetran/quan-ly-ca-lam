@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchRoster, registerShift, updateRegistration } from '../lib/api'
+import { fetchRoster, notify, registerShift, updateRegistration } from '../lib/api'
 import { useSession, useToast } from '../lib/store'
 import type { Profile, Registration, Shift } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
@@ -48,7 +48,9 @@ export default function ShiftDetail({
   const myReg = regs.find((r) => r.worker_id === me.id && r.status !== 'removed')
   const nameOf = (id: string) => profiles.find((p) => p.id === id)?.full_name || roster.find((r) => r.worker_id === id)?.full_name || 'Người làm'
   const canRegister = me.role === 'worker' && open && !myReg && remaining > 0 && me.kyc_status === 'approved'
-  const canCancel = me.role === 'worker' && myReg?.status === 'pending' && open
+  const canCancel =
+    me.role === 'worker' && myReg && open
+    && (myReg.status === 'pending' || (myReg.status === 'approved' && Date.now() < shiftTimes(shift).start.getTime()))
 
   const doRegister = async () => {
     setBusy(true)
@@ -66,6 +68,9 @@ export default function ShiftDetail({
     setBusy(true)
     try {
       await updateRegistration(myReg.id, { status: 'cancelled' })
+      // báo người phụ trách ca biết có người hủy chỗ
+      const owner = shift.approved_by ?? shift.created_by
+      await notify([owner], 'reg_cancelled', 'Người làm vừa hủy chỗ', `${me.full_name || 'Một người làm'} đã hủy đăng ký ca "${shift.title}" (${fmtD(shift.work_date)}). Kiểm tra danh sách ca để duyệt người thay.`, shift.id)
       push('Đã hủy đăng ký')
       onChanged?.()
     } catch (e) { push((e as Error).message, true) }
