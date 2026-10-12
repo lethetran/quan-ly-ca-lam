@@ -103,10 +103,11 @@ _Hiện không có việc dở dang._ (Ghi vào đây ngay khi bắt đầu vi�
 |---|---|---|---|
 | 1 | **Seed quyền admin cho email thật** — không seed thì không có admin nào ngoài tài khoản cũ | SQL Editor: `INSERT INTO public.app_admins (email) VALUES ('email-thật-của-bạn');` rồi đăng ký lại (hoặc cập nhật role trực tiếp cho tài khoản đã có) | ⏳ Chưa làm |
 | 2 | **Đổi mật khẩu admin** (mật khẩu cũ từng công khai trong git history) | App → Hồ sơ & cài đặt → Đổi mật khẩu (≥8 ký tự, chữ + số) | ⏳ Chưa xác nhận |
-| 3 | **Xử lý tài khoản mẫu** (`lam1`, `lam2`, `chucong`, `tuyendung`, `admin2` — mật khẩu đã từng công khai) | Đổi mật khẩu từng tài khoản, hoặc xóa: Dashboard → Authentication → Delete user (cascade xóa hồ sơ/ca liên quan) | ⏳ Chưa làm |
+| 3 | ~~Xử lý tài khoản mẫu~~ **ĐÃ XÓA HẾT** (2026-10-12) — thay bằng bộ tài khoản test mới với mật khẩu do chủ hệ thống đặt | — | ✅ |
 | 4 | **Xóa dữ liệu demo** (2 ca mẫu + đăng ký) nếu muốn bắt đầu trắng | Dashboard → Table Editor → shifts (xóa 2 ca "Hỗ trợ…") | ⏳ Tùy |
 | 5 | **Quyết định cơ chế đăng ký thật**: bật SMTP + xác nhận email, hoặc SĐT + OTP (xem Backlog Vừa) | Dashboard → Authentication → Providers/SMTP | ⏳ Chờ quyết định |
 | 6 | **Mở khóa GitHub billing** nếu muốn GitHub Pages dự phòng tự deploy (Vercel KHÔNG bị ảnh hưởng — vẫn tự deploy theo push) | github.com → Settings → Billing | ⏳ |
+| 9 | **Reset dữ liệu + tạo bộ tài khoản test chuẩn 5 vai trò** — đã xóa toàn bộ tài khoản cũ (lam1/lam2/chucong/tuyendung/admin2 cũ + 2 tài khoản Phenikaa) và dữ liệu demo (ca, nhãn, thông báo); giữ lại admin chính. Bộ mới: `admin2`, `tuyendung`, `doisoat`, `chucogty`, `nguoilam`, `nguoilam2` (mật khẩu chung do chủ hệ thống đặt — không ghi vào repo) | Supabase Auth (ngoài repo) | Đăng nhập từng tài khoản trên vercel.app | ✅ Hoàn thành, test đăng nhập 6/6 OK (2026-10-12) |
 | 8 | ~~Cấu hình SMTP riêng~~ **ĐÃ LÀM** (2026-10-12): Gmail SMTP qua App Password, đã test gửi thư xác thực thật thành công (không còn giới hạn ~2 thư/giờ). **Lưu ý:** App Password được trao đổi qua hội thoại — khi hệ thống ổn định, nên tạo App Password mới trong Google Account, cập nhật lại Supabase (Authentication → SMTP) rồi thu hồi cái cũ | Dashboard → Authentication → SMTP | ✅ Hoàn thành (không lưu mật khẩu vào repo) |
 | 7 | **Sao lưu + quy trình xoay khóa khi lộ** (tài liệu có trong README) | Dashboard → Database → Backups; rotate key ở Dashboard → API; đổi mật khẩu DB ở Database → Settings | ⏳ Lên lịch định kỳ |
 
