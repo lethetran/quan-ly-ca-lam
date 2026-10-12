@@ -84,6 +84,9 @@ _Hiện không có việc dở dang._ (Ghi vào đây ngay khi bắt đầu vi�
 | Chưa đo Lighthouse (mục tiêu ≥90 Performance/Accessibility/Best Practices) | — | Chạy Lighthouse trên vercel.app | 📌 |
 | File trang quá lớn chưa tách (`Recruiter.tsx` ~700 dòng, `Owner.tsx`, `Worker.tsx`) | `src/pages/` | — | 📌 Tách dần khi chạm tay vào |
 | Thống kê chỉ gom theo tháng; chưa có gom theo tuần | `src/pages/Worker.tsx`, `Recruiter.tsx` | Chọn tuần trong thống kê | 📌 |
+| **2 lỗ hổng nghiêm trọng: worker tự duyệt đăng ký mình (pending→approved) và tự chèn đăng ký trạng thái approved qua API** | `supabase/migrations/0006_registration_gates.sql` | Đăng nhập worker → PATCH registrations set status='approved' | ✅ Migration 0006: worker chỉ được HỦY (chờ duyệt thoải mái; đã duyệt chỉ trước giờ bắt đầu); chèn mới luôn 'pending'; test SQL 8b/8c chặn ✓ |
+| Chưa có điều kiện tiên quyết ở server: hồ sơ chưa duyệt vẫn đăng ký được nếu bypass giao diện; ca không còn tuyển/quá hạn/quá giờ vẫn nhận đăng ký | `supabase/migrations/0006` | POST registrations với profile kyc unsubmitted | ✅ Trigger chặn: kyc phải approved (cả khi recruiter duyệt vào ca); ca phải recruiting + chưa bắt đầu + chưa quá hạn (giờ VN) |
+| Ca đang diễn ra vẫn hiện với người không thuộc ca | `src/pages/Worker.tsx` | Worker không đăng ký mở "Lịch ca & đăng ký" | ✅ Chỉ hiện ca đang tuyển + ca mình thuộc; kiểm chứng 2 chiều bằng browser (lam2 ẩn, lam1 thuộc ca thấy) |
 | Trùng giờ CHÉO NGÀY chưa chặn: ca đêm 22:00–02:00 ngày 14 và ca sáng 08:00 ngày 15 (khác work_date) không bị coi là trùng (cả client lẫn DB so cùng ngày) | `src/lib/util.ts`, `supabase/migrations/0005` | Ca đêm hôm trước + sáng hôm sau | 📌 Hiếm gặp, ghi nhận hạn chế |
 | Ca lặp lại định kỳ (nhân bản tuần) chưa có | `src/pages/Owner.tsx` | — | 📌 |
 | Zalo chỉ là copy-paste nội dung (API Zalo không cho web post nhóm) | `src/components/ZaloShare.tsx` | Bấm chia sẻ | 📌 Giữ nguyên, đã ghi rõ trong UI |

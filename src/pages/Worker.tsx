@@ -42,7 +42,14 @@ export function WorkerShifts() {
 
   if (!shifts) return <Spinner />
   const reload = () => setTick((t) => t + 1)
-  const openShifts = shifts.filter((s) => effStatus(s).status === 'recruiting')
+  // Ca đang/đã diễn ra chỉ hiện với người THUỘC ca đó; còn lại chỉ thấy ca đang tuyển
+  const hasActiveReg = (s: Shift) => regs.some((r) => r.shift_id === s.id && (r.status === 'pending' || r.status === 'approved'))
+  const openShifts = shifts.filter((s) => {
+    const e = effStatus(s)
+    if (e.status === 'paid' || e.status === 'rejected' || e.status === 'cancelled') return false
+    if (e.status === 'recruiting') return true
+    return hasActiveReg(s)
+  })
 
   return (
     <div className="space-y-4">
@@ -62,7 +69,7 @@ export function WorkerShifts() {
 
       {view === 'calendar' ? (
         <Calendar
-          items={shifts.map((s) => {
+          items={openShifts.map((s) => {
             const eff = effStatus(s)
             const cls = SHIFT_STATUS_COLOR[eff.status]
             return {
@@ -79,12 +86,11 @@ export function WorkerShifts() {
         />
       ) : (
         <div className="space-y-2.5">
-          {shifts.filter((s) => { const e = effStatus(s); return e.status !== 'paid' && e.status !== 'rejected' && e.status !== 'cancelled' }).length === 0 && (
+          {openShifts.length === 0 && (
             <Empty msg="Chưa có ca nào đang mở. Khi chủ tạo ca mới và tuyển dụng duyệt, ca sẽ hiện ở đây." />
           )}
-          {[...shifts]
+          {[...openShifts]
             .sort((a, b) => (a.work_date + a.start_time).localeCompare(b.work_date + b.start_time))
-            .filter((s) => { const e = effStatus(s); return e.status !== 'paid' && e.status !== 'rejected' && e.status !== 'cancelled' })
             .map((s) => {
               const eff = effStatus(s)
               const { hours } = shiftTimes(s)

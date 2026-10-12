@@ -131,5 +131,10 @@ Kiểm chứng: build ✓ · 16/16 unit test ✓ · chụp màn hình mobile 390
 **4. Xác thực email khi tạo tài khoản (chống tạo ồ ạt)** — server bật xác thực (autoconfirm=false); đăng ký bắt buộc **email thật** (chặn domain giả `.local`, có kiểm tra định dạng); sau đăng ký hiện màn hình "Kiểm tra email để xác thực"; đăng nhập trước khi bấm link bị chặn với thông báo tiếng Việt; link xác nhận đưa về đúng website (allow-list: vercel/pages/localhost). ⚠️ SMTP mặc định Supabase ~2 thư/giờ → **cần cấu hình SMTP riêng** (AUDIT.md mục 4.8). Đã kiểm chứng qua API: đăng ký không nhận session, đăng nhập trước xác thực bị chặn "Email not confirmed", domain giả bị từ chối phía server.
 Kiểm chứng cả 3: build ✓ · 21/21 unit test ✓ · 2/2 SQL suite ✓ · blackbox API ✓.
 
+### ✅ Đã làm (phiên kiểm thử trùng giờ + điều kiện tiên quyết)
+**Điều kiện tiên quyết đăng ký ca (ép ở server, migration 0006)** — hồ sơ chưa được Admin 2 duyệt → không đăng ký được (và recruiter không duyệt vào ca được); worker không thể tự duyệt/tự chèn approved; ca phải còn tuyển, chưa bắt đầu, chưa quá hạn (giờ VN); hủy ca đã duyệt chỉ trước giờ bắt đầu. **Sửa 2 lỗ hổng leo thang thật** (worker tự duyệt qua API).
+**Ẩn ca không liên quan** — ca đang diễn ra/đã kết thúc chỉ hiện với người thuộc ca; người còn lại chỉ thấy ca đang tuyển. Kiểm chứng browser 2 chiều.
+Kiểm chứng: build ✓ · 21/21 unit ✓ · SQL suite có 5 case mới (8a–8e) ✓ · browser 2 chiều ✓.
+
 ### 🔜 Đề xuất làm ngay sau (theo bảng trên: 2 → 3 → 4 → 5 → 6)
 Các mục 💰 (7–13) **chờ chủ hệ thống gật đầu** mới làm vì đụng tiền, quyền truy cập, xóa dữ liệu hoặc gửi thông báo cho người dùng.

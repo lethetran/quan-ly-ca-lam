@@ -166,10 +166,10 @@ begin
   returning id into s2;
   perform set_config('role','postgres', true);
   perform set_config('request.jwt.claims', '', true);
-  -- worker1 đã có đăng ký approved ở s1 (current_date+7, 08:00-12:00) — s2 là ngày khác → hợp lệ
+  -- worker1 tự đăng ký (pending — 0006 cấm worker tự chèn approved); s2 là ngày khác với s1 → hợp lệ
   perform set_config('role','authenticated', true);
   perform set_config('request.jwt.claims', json_build_object('sub', worker1, 'role','authenticated')::text, true);
-  insert into public.registrations (shift_id, worker_id, status) values (s2, worker1, 'approved');
+  insert into public.registrations (shift_id, worker_id, status) values (s2, worker1, 'pending');
   -- tạo ca trùng giờ với s2 → đăng ký thêm phải bị chặn
   perform set_config('role','postgres', true);
   perform set_config('request.jwt.claims', '', true);
@@ -206,6 +206,93 @@ begin
   exception when others then
     if sqlerrm like 'FAIL%' then raise; end if;
   end;
+
+  -- ========== 8. ĐIỀU KIỆN TIÊN QUYẾT ĐĂNG KÝ (migration 0006) ==========
+  -- 8a. worker hồ sơ CHƯA DUYỆT → không đăng ký được (ca mới, chưa đăng ký)
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', owner1, 'role','authenticated')::text, true);
+  insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by, status)
+  values ('ZZTEST kyc chua duyet', 'Hà Nội', current_date + 12, '08:00', '09:00', 10000, 5, owner1, 'recruiting')
+  returning id into s1;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+  update public.profiles set kyc_status = 'unsubmitted' where id = worker1;
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', worker1, 'role','authenticated')::text, true);
+  begin
+    insert into public.registrations (shift_id, worker_id, status) values (s1, worker1, 'pending');
+    raise exception 'FAIL 8a: hồ sơ chưa duyệt vẫn đăng ký được';
+  exception when others then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+  update public.profiles set kyc_status = 'approved' where id = worker1;
+
+  -- 8b. worker KHÔNG TỰ DUYỆT (pending → approved bị chặn); hủy pending thì được
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', worker1, 'role','authenticated')::text, true);
+  insert into public.registrations (shift_id, worker_id, status) values (s1, worker1, 'pending');
+  begin
+    update public.registrations set status = 'approved' where shift_id = s1 and worker_id = worker1;
+    raise exception 'FAIL 8b: worker TỰ DUYỆT đăng ký thành công';
+  exception when others then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  update public.registrations set status = 'cancelled' where shift_id = s1 and worker_id = worker1;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+
+  -- 8c. worker tự chèn đăng ký trạng thái approved → bị chặn
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', worker1, 'role','authenticated')::text, true);
+  begin
+    insert into public.registrations (shift_id, worker_id, status) values (s1, worker1, 'approved');
+    raise exception 'FAIL 8c: worker tự chèn đăng ký approved';
+  exception when others then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+
+  -- 8d. đăng ký ca KHÔNG còn tuyển → bị chặn (worker)
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', owner1, 'role','authenticated')::text, true);
+  insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by, status)
+  values ('ZZTEST khong tuyen', 'Hà Nội', current_date + 10, '08:00', '09:00', 10000, 5, owner1, 'ongoing')
+  returning id into s1;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', worker1, 'role','authenticated')::text, true);
+  begin
+    insert into public.registrations (shift_id, worker_id, status) values (s1, worker1, 'pending');
+    raise exception 'FAIL 8d: đăng ký ca không còn tuyển vẫn được';
+  exception when others then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+
+  -- 8e. hủy ca ĐÃ BẮT ĐẦU (đã duyệt) → bị chặn
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', owner1, 'role','authenticated')::text, true);
+  insert into public.shifts (title, location, work_date, start_time, end_time, rate, capacity, created_by, status)
+  values ('ZZTEST da bat dau', 'Hà Nội', current_date - 1, '08:00', '09:00', 10000, 5, owner1, 'recruiting')
+  returning id into s1;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+  insert into public.registrations (shift_id, worker_id, status) values (s1, worker1, 'approved');
+  perform set_config('role','authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', worker1, 'role','authenticated')::text, true);
+  begin
+    update public.registrations set status = 'cancelled' where shift_id = s1 and worker_id = worker1;
+    raise exception 'FAIL 8e: hủy ca đã bắt đầu vẫn được';
+  exception when others then
+    if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  perform set_config('role','postgres', true);
+  perform set_config('request.jwt.claims', '', true);
 
   -- ========== DỌN DẸP ==========
   delete from public.registrations where shift_id in (select id from public.shifts where title like 'ZZTEST%');
