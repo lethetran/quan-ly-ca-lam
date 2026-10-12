@@ -7,6 +7,7 @@ import { AttendanceBadge, RegStatusBadge } from '../components/ZaloShare'
 import { listLabels, listRegistrations, listShifts } from '../lib/api'
 import { useSession } from '../lib/store'
 import type { Label, Profile, Registration, Shift } from '../lib/types'
+import { LABELS } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
 import { effStatus, fmtD, fmtT, money, num, shiftTimes, ym, monthName } from '../lib/util'
 
@@ -290,7 +291,7 @@ export function WorkerStats() {
             <ul className="space-y-1.5 text-sm">
               {badLabels.map((l) => (
                 <li key={l.id} className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5">
-                  <b>{l.code === 'late' ? 'Đi trễ' : l.code === 'leave_early' ? 'Về sớm không phép' : l.code === 'no_show' ? 'Không đến khi đã đăng ký' : l.code === 'cancel_late' ? 'Hủy ca sát giờ' : l.code === 'attitude' ? 'Thái độ kém' : l.code === 'uniform' ? 'Không đúng trang phục' : 'Khác'}</b>
+                  <b>{LABELS[l.code]?.label ?? l.code}</b>
                   {l.note && <span className="text-zinc-600"> — {l.note}</span>}
                 </li>
               ))}

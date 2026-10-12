@@ -7,10 +7,18 @@
 do $$
 declare
   owner1 uuid := (select id from public.profiles where role = 'owner' limit 1);
-  worker1 uuid := 'af1471e9-585c-4c38-81db-42cc102ba9bd'; -- lam1
+  -- uid ĐỘNG: tự lấy worker đã duyệt hồ sơ (chống hỏng sau khi reset dữ liệu/tài khoản)
+  worker1 uuid := (select id from public.profiles where role = 'worker' and kyc_status = 'approved' order by created_at asc limit 1);
+  worker2 uuid := (select id from public.profiles where role = 'worker' and kyc_status = 'approved' order by created_at desc limit 1);
   s uuid;
   expect_fail text;
 begin
+  if worker1 is null or worker2 is null or worker1 = worker2 then
+    raise notice 'Cần ít nhất 2 tài khoản worker đã duyệt hồ sơ để chạy test — bỏ qua';
+    return;
+  end if;
+  -- cho worker2 một CCCD test để kịch bản trùng CCCD có gì đó để trùng
+  update public.profiles set cccd = '079300002002' where id = worker2;
   -- dọn rác lần chạy cũ
   delete from public.shifts where title like 'ZZVAL%';
 
@@ -141,6 +149,28 @@ begin
   end;
   perform set_config('role','postgres', true);
   perform set_config('request.jwt.claims', '', true);
+
+  -- 8. TRÙNG THÔNG TIN → TỰ GẮN NHÃN dup_info (migration 0008, không chặn cứng)
+  begin
+    update public.profiles set kyc_status = 'pending', cccd = '079300002002' where id = worker1;
+  exception when others then
+    raise exception 'FAIL: nộp hồ sơ trùng CCCD lại bị chặn (luật mới là tự gắn nhãn): %', sqlerrm;
+  end;
+  if not exists (select 1 from public.labels where worker_id = worker1 and code = 'dup_info') then
+    raise exception 'FAIL: trùng thông tin nhưng không tự gắn nhãn dup_info';
+  end if;
+  -- nộp lại KHÔNG trùng → nhãn phải tự gỡ
+  begin
+    update public.profiles set kyc_status = 'pending', cccd = '079300001001' where id = worker1;
+  exception when others then
+    raise exception 'FAIL: nộp hồ sơ CCCD hợp lệ lại lỗi: %', sqlerrm;
+  end;
+  if exists (select 1 from public.labels where worker_id = worker1 and code = 'dup_info') then
+    raise exception 'FAIL: nhãn dup_info chưa được gỡ dù thông tin không còn trùng';
+  end if;
+  -- phục hồi trạng thái gốc
+  update public.profiles set cccd = null where id = worker1;
+  update public.profiles set cccd = '079300002002' where id = worker2;
 
   -- dọn
   delete from public.registrations where shift_id = s;

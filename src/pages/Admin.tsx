@@ -46,6 +46,26 @@ export function Kyc() {
   const queue = profiles.filter((p) => p.kyc_status === 'pending')
   const done = profiles.filter((p) => p.kyc_status === 'approved' || p.kyc_status === 'rejected')
 
+  // Cảnh báo trùng thông tin với hồ sơ khác (đang chờ/đã duyệt) — chống tạo tài khoản ảo
+  const activeProfiles = profiles.filter((q) => q.kyc_status === 'pending' || q.kyc_status === 'approved')
+  const dups = (p: Profile): string[] => {
+    const out: string[] = []
+    const nameOf = (q: Profile) => q.full_name || q.username
+    if (p.cccd) {
+      const q = activeProfiles.find((x) => x.id !== p.id && x.cccd === p.cccd)
+      if (q) out.push('CCCD trùng: ' + nameOf(q))
+    }
+    if (p.phone) {
+      const q = activeProfiles.find((x) => x.id !== p.id && x.phone && x.phone === p.phone)
+      if (q) out.push('SĐT trùng: ' + nameOf(q))
+    }
+    if (p.bank_account) {
+      const q = activeProfiles.find((x) => x.id !== p.id && x.bank_account && x.bank_account === p.bank_account)
+      if (q) out.push('STK trùng: ' + nameOf(q))
+    }
+    return out
+  }
+
   const decide = async (p: Profile, ok: boolean) => {
     try {
       await adminUpdateProfile(p.id, { kyc_status: ok ? 'approved' : 'rejected', kyc_note: ok ? null : 'Ảnh CCCD không hợp lệ — vui lòng chụp lại rõ nét, đủ 2 mặt' })
@@ -63,7 +83,10 @@ export function Kyc() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">Duyệt hồ sơ CCCD</h1>
-        <p className="text-sm text-zinc-500">Chỉ khi được duyệt, người làm mới có thể đăng ký ca.</p>
+        <p className="text-sm text-zinc-500">
+          Chỉ khi được duyệt, người làm mới có thể đăng ký ca.
+          Hồ sơ trùng CCCD/SĐT/STK với người khác sẽ được <b>tự gắn nhãn "Trùng thông tin"</b> và đánh dấu đỏ ngay dưới đây.
+        </p>
       </div>
 
       <h2 className="font-display text-lg font-bold uppercase text-zinc-600">Chờ duyệt ({queue.length})</h2>
@@ -76,6 +99,15 @@ export function Kyc() {
                 <div className="text-xs text-zinc-500">{p.phone || '—'} · {shortAccount(p.username)}</div>
               </div>
               <div className="text-sm text-zinc-600">CCCD: {p.cccd || '—'}</div>
+              {dups(p).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {dups(p).map((d) => (
+                    <Badge key={d} className={d.startsWith('CCCD') ? 'border-red-300 bg-red-600 text-white' : 'border-amber-300 bg-amber-500 text-white'}>
+                      ⚠ {d}
+                    </Badge>
+                  ))}
+                </div>
+              )}
               <div className="ml-auto flex gap-2">
                 <button className="btn-ghost" onClick={() => setSel(p)}>Xem ảnh CCCD</button>
                 <button className="btn-primary" onClick={() => decide(p, true)}><Check size={15} /> Duyệt</button>

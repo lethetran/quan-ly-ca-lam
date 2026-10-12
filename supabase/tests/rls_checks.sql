@@ -10,12 +10,17 @@
 
 do $$
 declare
-  worker1 uuid := 'af1471e9-585c-4c38-81db-42cc102ba9bd';  -- lam1
-  worker2 uuid := '69e8d716-d069-4fd2-a6ce-01fc5bc416a6';  -- lam2
+  -- uid ĐỘNG: tự lấy worker đã duyệt hồ sơ (chống hỏng sau khi reset dữ liệu/tài khoản)
+  worker1 uuid := (select id from public.profiles where role = 'worker' and kyc_status = 'approved' order by created_at asc limit 1);
+  worker2 uuid := (select id from public.profiles where role = 'worker' and kyc_status = 'approved' order by created_at desc limit 1);
   owner1  uuid := (select id from public.profiles where role = 'owner' limit 1);
   recruiter1 uuid := (select id from public.profiles where role = 'recruiter' limit 1);
   s1 uuid; s2 uuid; reg uuid;
 begin
+  if worker1 is null or worker2 is null or worker1 = worker2 then
+    raise notice 'Cần ít nhất 2 tài khoản worker đã duyệt hồ sơ để chạy test — bỏ qua';
+    return;
+  end if;
   -- dọn rác lần chạy cũ
   delete from public.shifts where title like 'ZZTEST%';
 

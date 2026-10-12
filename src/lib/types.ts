@@ -134,6 +134,7 @@ export const LABELS: Record<string, { label: string; bad: boolean }> = {
   attitude: { label: 'Thái độ kém', bad: true },
   uniform: { label: 'Không đúng trang phục', bad: true },
   other_bad: { label: 'Lý do khác (xấu)', bad: true },
+  dup_info: { label: 'Trùng thông tin với tài khoản khác', bad: true }, // hệ thống tự gắn khi nộp hồ sơ trùng CCCD/SĐT/STK
 }
 
 export interface Label {
