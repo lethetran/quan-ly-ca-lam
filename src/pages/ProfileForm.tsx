@@ -1,6 +1,7 @@
 import { Camera, ShieldCheck } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { updateOwnProfile, uploadImage } from '../lib/api'
+import { BANKS, BANK_OTHER, bankSelectValue } from '../lib/banks'
 import { useSession, useToast } from '../lib/store'
 import type { KycStatus } from '../lib/types'
 import { Banner } from '../components/ui'
@@ -21,7 +22,8 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
     cccd: profile?.cccd ?? '',
     phone: profile?.phone ?? '',
     address: profile?.address ?? '',
-    bank_name: profile?.bank_name ?? '',
+    bank_name: bankSelectValue(profile?.bank_name), // giá trị chọn: tên ngân hàng trong danh sách hoặc "Khác"
+    bank_other: profile?.bank_name && bankSelectValue(profile?.bank_name) === BANK_OTHER ? profile.bank_name : '',
     bank_account: profile?.bank_account ?? '',
   })
   const [front, setFront] = useState<File | null>(null)
@@ -30,7 +32,7 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
   const backRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
 
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value })
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value })
 
   const submit = async () => {
     if (!profile) return
@@ -38,16 +40,21 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
     if (!/^\d{9,12}$/.test(f.cccd.trim())) { push('Số CCCD gồm 9–12 chữ số', true); return }
     if (!/^\d{9,11}$/.test(f.phone.trim())) { push('Số điện thoại gồm 9–11 chữ số', true); return }
     if (!f.address.trim() || f.address.trim().length > 200) { push('Địa chỉ bắt buộc, tối đa 200 ký tự', true); return }
-    if (!f.bank_name.trim() || f.bank_name.trim().length > 50) { push('Nhập tên ngân hàng (tối đa 50 ký tự)', true); return }
+    // Ngân hàng: chọn từ danh sách chuẩn; "Khác" thì nhập tên (2–50 ký tự)
+    const bankName = f.bank_name === BANK_OTHER ? f.bank_other.trim() : f.bank_name
+    if (!bankName || bankName.length < 2 || bankName.length > 60) { push('Chọn ngân hàng từ danh sách (hoặc chọn "Khác" và nhập tên)', true); return }
     if (!/^\d{6,19}$/.test(f.bank_account.trim())) { push('Số tài khoản gồm 6–19 chữ số (không có chữ, không khoảng trắng)', true); return }
     const alreadyApproved = profile.kyc_status === 'approved'
     if (!alreadyApproved && (!front || !back)) { push('Cần tải lên ảnh CCCD mặt trước VÀ mặt sau', true); return }
     setBusy(true)
     try {
       const patch: Parameters<typeof updateOwnProfile>[1] = {
-        ...f,
+        full_name: f.full_name.trim(),
         cccd: f.cccd.trim(),
         phone: f.phone.trim(),
+        address: f.address.trim(),
+        bank_name: bankName,
+        bank_account: f.bank_account.trim(),
       }
       if (front) patch.cccd_front_path = await uploadImage(profile.id, 'front', front)
       if (back) patch.cccd_back_path = await uploadImage(profile.id, 'back', back)
@@ -70,7 +77,17 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
         <div><span className="label">Họ và tên *</span><input className="field" value={f.full_name} onChange={set('full_name')} placeholder="NGUYỄN VĂN A" /></div>
         <div><span className="label">Số CCCD *</span><input className="field" value={f.cccd} onChange={set('cccd')} placeholder="12 chữ số" inputMode="numeric" /></div>
         <div><span className="label">Số điện thoại *</span><input className="field" value={f.phone} onChange={set('phone')} inputMode="tel" /></div>
-        <div><span className="label">Ngân hàng *</span><input className="field" value={f.bank_name} onChange={set('bank_name')} placeholder="VD: Vietcombank, MB Bank, TPBank…" /></div>
+        <div>
+          <span className="label">Ngân hàng * (chọn từ danh sách)</span>
+          <select className="field" value={f.bank_name} onChange={set('bank_name')}>
+            <option value="">— Chọn ngân hàng —</option>
+            {BANKS.map((b) => <option key={b.code} value={b.name}>{b.name}</option>)}
+            <option value={BANK_OTHER}>Khác (nhập tên bên dưới)</option>
+          </select>
+        </div>
+        {f.bank_name === BANK_OTHER && (
+          <div><span className="label">Tên ngân hàng khác *</span><input className="field" value={f.bank_other} onChange={set('bank_other')} placeholder="Gõ tên ngân hàng" maxLength={60} /></div>
+        )}
         <div><span className="label">Số tài khoản *</span><input className="field" value={f.bank_account} onChange={set('bank_account')} inputMode="numeric" /></div>
         <div className="sm:col-span-2"><span className="label">Địa chỉ *</span><input className="field" value={f.address} onChange={set('address')} placeholder="Số nhà, đường, phường/xã, tỉnh" /></div>
       </div>

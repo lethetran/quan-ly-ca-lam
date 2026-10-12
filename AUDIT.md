@@ -87,6 +87,8 @@ _Hiện không có việc dở dang._ (Ghi vào đây ngay khi bắt đầu vi�
 | **2 lỗ hổng nghiêm trọng: worker tự duyệt đăng ký mình (pending→approved) và tự chèn đăng ký trạng thái approved qua API** | `supabase/migrations/0006_registration_gates.sql` | Đăng nhập worker → PATCH registrations set status='approved' | ✅ Migration 0006: worker chỉ được HỦY (chờ duyệt thoải mái; đã duyệt chỉ trước giờ bắt đầu); chèn mới luôn 'pending'; test SQL 8b/8c chặn ✓ |
 | Chưa có điều kiện tiên quyết ở server: hồ sơ chưa duyệt vẫn đăng ký được nếu bypass giao diện; ca không còn tuyển/quá hạn/quá giờ vẫn nhận đăng ký | `supabase/migrations/0006` | POST registrations với profile kyc unsubmitted | ✅ Trigger chặn: kyc phải approved (cả khi recruiter duyệt vào ca); ca phải recruiting + chưa bắt đầu + chưa quá hạn (giờ VN) |
 | Ca đang diễn ra vẫn hiện với người không thuộc ca | `src/pages/Worker.tsx` | Worker không đăng ký mở "Lịch ca & đăng ký" | ✅ Chỉ hiện ca đang tuyển + ca mình thuộc; kiểm chứng 2 chiều bằng browser (lam2 ẩn, lam1 thuộc ca thấy) |
+| Ô "Ngân hàng" là chữ tự do → dữ liệu lộn xộn khó đối soát | `src/lib/banks.ts`, `src/pages/ProfileForm.tsx` | Mở Hồ sơ → ô Ngân hàng | ✅ Menu chọn chuẩn 47 ngân hàng VN (mã theo VietQR/Napas); giá trị cũ tự nhận diện; còn "Khác" cho trường hợp ngoài danh sách; 3 unit test mới (24/24 PASS) |
+| Ca rác test SQL-injection (`' OR 1=1 --; DROP TABLE…`) còn sót trong dữ liệu sau blackbox | Supabase (ngoài repo) | Mở Lịch ca & đăng ký | ✅ Đã xóa; quy tắc cleanup dùng bộ lọc chính xác hơn |
 | Trùng giờ CHÉO NGÀY chưa chặn: ca đêm 22:00–02:00 ngày 14 và ca sáng 08:00 ngày 15 (khác work_date) không bị coi là trùng (cả client lẫn DB so cùng ngày) | `src/lib/util.ts`, `supabase/migrations/0005` | Ca đêm hôm trước + sáng hôm sau | 📌 Hiếm gặp, ghi nhận hạn chế |
 | Ca lặp lại định kỳ (nhân bản tuần) chưa có | `src/pages/Owner.tsx` | — | 📌 |
 | Zalo chỉ là copy-paste nội dung (API Zalo không cho web post nhóm) | `src/components/ZaloShare.tsx` | Bấm chia sẻ | 📌 Giữ nguyên, đã ghi rõ trong UI |
@@ -105,7 +107,7 @@ _Hiện không có việc dở dang._ (Ghi vào đây ngay khi bắt đầu vi�
 | 4 | **Xóa dữ liệu demo** (2 ca mẫu + đăng ký) nếu muốn bắt đầu trắng | Dashboard → Table Editor → shifts (xóa 2 ca "Hỗ trợ…") | ⏳ Tùy |
 | 5 | **Quyết định cơ chế đăng ký thật**: bật SMTP + xác nhận email, hoặc SĐT + OTP (xem Backlog Vừa) | Dashboard → Authentication → Providers/SMTP | ⏳ Chờ quyết định |
 | 6 | **Mở khóa GitHub billing** nếu muốn GitHub Pages dự phòng tự deploy (Vercel KHÔNG bị ảnh hưởng — vẫn tự deploy theo push) | github.com → Settings → Billing | ⏳ |
-| 8 | **Cấu hình SMTP riêng để gửi mail xác thực** — SMTP mặc định của Supabase chỉ gửi được ~2 thư/giờ (đã chạm hạn khi test) | Dashboard → Authentication → SMTP: điền provider (Resend/Mailgun/Gmail app-password…) | ⏳ Chưa làm |
+| 8 | ~~Cấu hình SMTP riêng~~ **ĐÃ LÀM** (2026-10-12): Gmail SMTP qua App Password, đã test gửi thư xác thực thật thành công (không còn giới hạn ~2 thư/giờ). **Lưu ý:** App Password được trao đổi qua hội thoại — khi hệ thống ổn định, nên tạo App Password mới trong Google Account, cập nhật lại Supabase (Authentication → SMTP) rồi thu hồi cái cũ | Dashboard → Authentication → SMTP | ✅ Hoàn thành (không lưu mật khẩu vào repo) |
 | 7 | **Sao lưu + quy trình xoay khóa khi lộ** (tài liệu có trong README) | Dashboard → Database → Backups; rotate key ở Dashboard → API; đổi mật khẩu DB ở Database → Settings | ⏳ Lên lịch định kỳ |
 
 ---

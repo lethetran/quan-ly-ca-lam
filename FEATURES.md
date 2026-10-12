@@ -136,5 +136,10 @@ Kiểm chứng cả 3: build ✓ · 21/21 unit test ✓ · 2/2 SQL suite ✓ · 
 **Ẩn ca không liên quan** — ca đang diễn ra/đã kết thúc chỉ hiện với người thuộc ca; người còn lại chỉ thấy ca đang tuyển. Kiểm chứng browser 2 chiều.
 Kiểm chứng: build ✓ · 21/21 unit ✓ · SQL suite có 5 case mới (8a–8e) ✓ · browser 2 chiều ✓.
 
+### ✅ Đã làm (phiên ngân hàng + SMTP)
+**Ngân hàng chọn từ danh sách chuẩn** — 47 ngân hàng Việt Nam (theo List B NHNN, mã chuẩn VietQR/Napas) trong menu thả xuống tại Hồ sơ; giá trị cũ tự nhận diện (không mất dữ liệu); còn mục "Khác" nhập tay cho trường hợp ngoài danh sách. Không cần dọn dữ liệu về sau.
+**SMTP xác thực email đã cấu hình + kiểm chứng** — Gmail App Password qua API Supabase; test đăng ký thật: thư xác thực gửi thành công (không còn rate limit 2 thư/giờ). Lưu ý bảo mật ghi trong AUDIT.md (xoay App Password khi ổn định).
+Kiểm chứng: build ✓ · 24/24 unit test ✓ · test gửi mail thật ✓ · screenshot UI ✓.
+
 ### 🔜 Đề xuất làm ngay sau (theo bảng trên: 2 → 3 → 4 → 5 → 6)
 Các mục 💰 (7–13) **chờ chủ hệ thống gật đầu** mới làm vì đụng tiền, quyền truy cập, xóa dữ liệu hoặc gửi thông báo cho người dùng.
