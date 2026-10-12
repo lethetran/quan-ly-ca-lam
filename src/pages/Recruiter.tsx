@@ -599,6 +599,7 @@ export function Reconcile() {
 
 /* ============ 4) DASHBOARD TUYỂN DỤNG ============ */
 export function RecruiterDashboard() {
+  const { profile } = useSession()
   const [shifts, setShifts] = useState<Shift[]>([])
   const [regs, setRegs] = useState<Registration[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
@@ -653,7 +654,7 @@ export function RecruiterDashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <QueueCard n={pendingShifts} label="Ca chờ duyệt" to="/approve" accent />
         <QueueCard n={pendingRegs} label="Người chờ duyệt vào ca" to="/approve" />
-        <QueueCard n={kycPending} label="Hồ sơ CCCD chờ duyệt" to="/kyc" />
+        {profile?.role === 'admin' && <QueueCard n={kycPending} label="Hồ sơ CCCD chờ duyệt" to="/kyc" />}
         <StatCard label={`Tiền đối soát ${monthName(month)}`} value={money(moneyInMonth)} sub={`${attendedInMonth.length} lượt đi làm`} accent />
       </div>
 

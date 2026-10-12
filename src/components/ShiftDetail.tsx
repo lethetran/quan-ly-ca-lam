@@ -91,11 +91,31 @@ export default function ShiftDetail({
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Thời gian</div><div className="font-semibold">{fmtD(shift.work_date)}</div><div>{fmtT(shift.start_time)} → {fmtT(shift.end_time)}</div></div>
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Số giờ / đơn giá</div><div className="font-semibold">{hours} giờ</div><div>{money(shift.rate)}/giờ</div></div>
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Nhận được/ca</div><div className="font-semibold text-accent">{money(shift.rate * hours)}</div><div className="text-xs text-zinc-400">trước khi chấm công</div></div>
-          <div><div className="text-[11px] font-bold uppercase text-zinc-400">Địa điểm</div><div className="font-semibold">{shift.location}</div></div>
+          <div>
+            <div className="text-[11px] font-bold uppercase text-zinc-400">Địa điểm</div>
+            <div className="font-semibold">{shift.location}</div>
+            <a
+              className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-accent underline"
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shift.location)}`}
+              target="_blank" rel="noreferrer"
+            >
+              Mở bản đồ ↗
+            </a>
+          </div>
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Số lượng</div><div className="font-semibold">{activeCount}/{shift.capacity} người</div><div className="text-xs text-zinc-400">còn trống {remaining}</div></div>
           <div><div className="text-[11px] font-bold uppercase text-zinc-400">Hạn đăng ký</div><div className="font-semibold">{shift.reg_deadline ? fmtDT(shift.reg_deadline) : 'Đến giờ bắt đầu'}</div></div>
           {(shift.contact_name || shift.contact_phone) && (
-            <div className="col-span-2 sm:col-span-3"><div className="text-[11px] font-bold uppercase text-zinc-400">Người liên hệ tại chỗ</div><div className="font-semibold">{shift.contact_name || '—'} {shift.contact_phone ? '· ' + shift.contact_phone : ''}</div></div>
+            <div className="col-span-2 sm:col-span-3">
+              <div className="text-[11px] font-bold uppercase text-zinc-400">Người liên hệ tại chỗ</div>
+              <div className="font-semibold">
+                {shift.contact_name || '—'}
+                {shift.contact_phone && (
+                  <a className="ml-2 inline-flex items-center gap-1 text-sm font-bold text-accent underline" href={`tel:${shift.contact_phone}`}>
+                    Gọi {shift.contact_phone}
+                  </a>
+                )}
+              </div>
+            </div>
           )}
           {shift.note && <div className="col-span-2 rounded-lg bg-amber-50 p-2.5 text-sm text-amber-900 sm:col-span-3"><b>Lưu ý:</b> {shift.note}</div>}
         </div>

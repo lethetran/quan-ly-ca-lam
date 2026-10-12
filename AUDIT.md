@@ -46,6 +46,7 @@
 | Bảng đối soát không dùng được trên điện thoại (cuộn ngang) | `src/pages/Recruiter.tsx` | Mở đối soát ở màn hình 390px | ✅ Chế độ thẻ cho mobile |
 | `tsconfig.tsbuildinfo` bị commit; README lẫn chữ Hán ("本地") | `.gitignore`, `README.md` | `git ls-files` | ✅ |
 | Truy vấn không giới hạn độ dài | `src/lib/api.ts` | DB lớn dần | ✅ `.limit(500)` + index (migration 0001) |
+| Thẻ "Hồ sơ CCCD chờ duyệt" trên dashboard recruiter trỏ trang không có quyền (bấm = đá về dashboard) | `src/pages/Recruiter.tsx` | Đăng nhập recruiter → Bảng điều khiển → bấm thẻ KYC | ✅ Chỉ hiện với admin (FEATURES.md bước 1) |
 
 ---
 
