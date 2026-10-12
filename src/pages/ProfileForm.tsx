@@ -14,7 +14,7 @@ export const KYC_TEXT: Record<KycStatus, { text: string; cls: string }> = {
 
 /** Bước hoàn thiện hồ sơ bắt buộc cho người đi làm */
 export function ProfileForm({ onDone }: { onDone?: () => void }) {
-  const { profile, reloadProfile } = useSession()
+  const { profile, reloadProfile, email: sessionEmail } = useSession()
   const { push } = useToast()
   const [f, setF] = useState({
     full_name: profile?.full_name ?? '',
@@ -66,6 +66,7 @@ export function ProfileForm({ onDone }: { onDone?: () => void }) {
   return (
     <div className="space-y-3.5">
       <div className="grid gap-3 sm:grid-cols-2">
+        <div><span className="label">Email đăng nhập (không đổi được tại đây)</span><input className="field bg-zinc-50" value={profile?.email || sessionEmail || '—'} readOnly /></div>
         <div><span className="label">Họ và tên *</span><input className="field" value={f.full_name} onChange={set('full_name')} placeholder="NGUYỄN VĂN A" /></div>
         <div><span className="label">Số CCCD *</span><input className="field" value={f.cccd} onChange={set('cccd')} placeholder="12 chữ số" inputMode="numeric" /></div>
         <div><span className="label">Số điện thoại *</span><input className="field" value={f.phone} onChange={set('phone')} inputMode="tel" /></div>

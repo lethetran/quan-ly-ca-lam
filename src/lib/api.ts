@@ -22,7 +22,7 @@ export async function ensureProfile(userId: string, email: string): Promise<Prof
     // username chỉ a-z0-9._ (khớp ràng buộc DB); hỏng định dạng thì sinh từ id
     let username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '')
     if (username.length < 3) username = `u_${userId.slice(0, 8)}`
-    const { error } = await supabase.from('profiles').insert({ id: userId, username, kyc_status: 'unsubmitted' })
+    const { error } = await supabase.from('profiles').insert({ id: userId, username, email, kyc_status: 'unsubmitted' })
     if (error) {
       const { data: again } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
       if (again) return again as Profile

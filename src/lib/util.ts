@@ -18,6 +18,7 @@ export function usernameOk(name: string): boolean {
 export function authErrorVi(msg: string): string {
   const m = msg.toLowerCase()
   if (m.includes('invalid login credentials')) return 'Tài khoản hoặc mật khẩu không đúng.'
+  if (m.includes('email not confirmed')) return 'Tài khoản chưa được xác thực — hãy mở email và bấm link xác nhận rồi đăng nhập lại.'
   if (m.includes('already registered') || m.includes('already exists') || m.includes('duplicate key')) return 'Tên đăng nhập này đã được dùng — hãy đăng nhập, hoặc chọn tên khác.'
   if (m.includes('password') && m.includes('least')) return 'Mật khẩu phải tối thiểu 8 ký tự.'
   if (m.includes('rate limit') || m.includes('too many')) return 'Bạn thử quá nhiều lần — đợi 1 phút rồi thử lại nhé.'
@@ -41,8 +42,26 @@ export function shiftTimes(s: Shift): { start: Date; end: Date; hours: number } 
   return { start, end, hours: s.hours_override ?? Math.round(auto * 100) / 100 }
 }
 
-/** Trạng thái hiệu lực: đang tuyển tự chuyển "đang diễn ra" theo thời gian */
-export function effStatus(s: Shift, now = Date.now()): { status: ShiftStatus; ended: boolean } {
+/** Hai ca CÙNG ngày làm có giao thời gian? (so trên phần thuộc cùng ngày —
+ * đuôi ca qua đêm rơi vào hôm sau nên không giao ca sáng hôm đó) */
+export function shiftsOverlap(a: Shift, b: Shift): boolean {
+  if (a.work_date !== b.work_date) return false
+  const mins = (t: string) => {
+    const [h, m] = t.split(':').map(Number)
+    return h * 60 + (m || 0)
+  }
+  // khoảng trên trục cùng ngày: ca qua đêm lấy từ giờ bắt đầu đến 24:00
+  const span = (s: Shift): { s: number; e: number } => {
+    const S = mins(s.start_time)
+    let E = mins(s.end_time)
+    if (E <= S) E = 1440
+    return { s: S, e: E }
+  }
+  const a1 = span(a), b1 = span(b)
+  return a1.s < b1.e && b1.s < a1.e
+}
+
+/** Trạng thái hiệu lực: đang tuyển tự chuyển "đang diễn ra" theo thời gian */export function effStatus(s: Shift, now = Date.now()): { status: ShiftStatus; ended: boolean } {
   if (s.status !== 'recruiting') {
     if (s.status === 'ongoing') {
       const { end } = shiftTimes(s)

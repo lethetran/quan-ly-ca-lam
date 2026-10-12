@@ -125,5 +125,11 @@ Chấm: GT = giá trị người dùng (1–5) · CS = công sức (S/M/L) · RR
 Kèm **sửa lỗi thật:** thẻ "Hồ sơ CCCD chờ duyệt" trên dashboard recruiter trỏ tới trang không có quyền (bấm = đá về dashboard) — giờ chỉ hiện với admin (`src/pages/Recruiter.tsx`, `src/components/ShiftDetail.tsx`).
 Kiểm chứng: build ✓ · 16/16 unit test ✓ · chụp màn hình mobile 390px xác nhận 2 nút hoạt động.
 
+### ✅ Đã làm (phiên sau, theo yêu cầu chủ hệ thống)
+**2. Chặn trùng giờ hiện rõ cho người làm + đồng bộ luật ở DB** — worker mở ca giao giờ với ca mình đã đăng ký → banner đỏ nêu đúng ca trùng (tên, ngày, giờ, địa điểm) + nút gửi bị tắt; DB trigger (0005) so trùng giờ chuẩn hóa ca qua đêm. Kiểm chứng: banner hiển thị với lam2 trên ca test trùng giờ; SQL suite PASS.
+**3. Email trong hồ sơ** — Hồ sơ & cài đặt hiện "Email đăng nhập" (chỉ đọc); trang Quản lý người dùng (admin) có cột Email. Migration 0005 thêm cột `profiles.email`, tự lưu khi tạo hồ sơ.
+**4. Xác thực email khi tạo tài khoản (chống tạo ồ ạt)** — server bật xác thực (autoconfirm=false); đăng ký bắt buộc **email thật** (chặn domain giả `.local`, có kiểm tra định dạng); sau đăng ký hiện màn hình "Kiểm tra email để xác thực"; đăng nhập trước khi bấm link bị chặn với thông báo tiếng Việt; link xác nhận đưa về đúng website (allow-list: vercel/pages/localhost). ⚠️ SMTP mặc định Supabase ~2 thư/giờ → **cần cấu hình SMTP riêng** (AUDIT.md mục 4.8). Đã kiểm chứng qua API: đăng ký không nhận session, đăng nhập trước xác thực bị chặn "Email not confirmed", domain giả bị từ chối phía server.
+Kiểm chứng cả 3: build ✓ · 21/21 unit test ✓ · 2/2 SQL suite ✓ · blackbox API ✓.
+
 ### 🔜 Đề xuất làm ngay sau (theo bảng trên: 2 → 3 → 4 → 5 → 6)
 Các mục 💰 (7–13) **chờ chủ hệ thống gật đầu** mới làm vì đụng tiền, quyền truy cập, xóa dữ liệu hoặc gửi thông báo cho người dùng.

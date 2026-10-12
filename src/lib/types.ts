@@ -14,6 +14,7 @@ export const ROLE_LABEL: Record<Role, string> = {
 export interface Profile {
   id: string
   username: string
+  email: string | null
   role: Role
   full_name: string | null
   cccd: string | null

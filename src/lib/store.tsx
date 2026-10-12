@@ -46,7 +46,7 @@ type SessionState = {
   profileFailed: boolean
   reloadProfile: () => Promise<void>
   signIn: (login: string, password: string) => Promise<void>
-  signUp: (login: string, password: string) => Promise<void>
+  signUp: (login: string, password: string) => Promise<{ needsConfirmation: boolean }>
   signOut: () => Promise<void>
 }
 
@@ -104,11 +104,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   )
 
   const signUp = useCallback(
-    async (login: string, password: string) => {
-      const { error, data } = await supabase.auth.signUp({ email: toEmail(login), password })
+    async (login: string, password: string): Promise<{ needsConfirmation: boolean }> => {
+      const { error, data } = await supabase.auth.signUp({
+        email: toEmail(login),
+        password,
+        options: { emailRedirectTo: `${location.origin}/` },
+      })
       if (error) throw new Error(authErrorVi(error.message))
+      if (!data.session) return { needsConfirmation: true } // chờ bấm link trong email
       if (data.session?.user?.email) await loadProfile(data.session.user.id, data.session.user.email)
-      else if (data.user?.email) await loadProfile(data.user.id, data.user.email)
+      return { needsConfirmation: false }
     },
     [loadProfile],
   )

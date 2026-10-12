@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   authErrorVi, clampNum, digitsOk, effStatus, imageOk, maskCccd, money, num, passwordOk,
-  regOpen, shiftFormError, shiftTimes, toEmail, todayVN, usernameOk,
+  regOpen, shiftFormError, shiftsOverlap, shiftTimes, toEmail, todayVN, usernameOk,
 } from './util'
 import type { Shift } from './types'
 
@@ -126,5 +126,38 @@ describe('chặn giá trị sai/âm', () => {
     expect(shiftFormError({ ...base, start_time: '08:00', end_time: '08:00' })).toContain('khác giờ bắt đầu')
     expect(shiftFormError({ ...base, contact_phone: 'abc' })).toContain('9–11 chữ số')
     expect(shiftFormError({ ...base, contact_phone: undefined })).toBeNull()
+  })
+})
+
+describe('chặn đăng ký trùng giờ', () => {
+  const d = (o: Partial<Parameters<typeof shiftTimes>[0]>) => mk(o)
+  it('giao giờ cùng ngày → trùng', () => {
+    const a = d({ start_time: '08:00:00', end_time: '12:00:00' })
+    expect(shiftsOverlap(a, d({ start_time: '11:00:00', end_time: '15:00:00' }))).toBe(true)
+    expect(shiftsOverlap(a, d({ start_time: '07:00:00', end_time: '08:30:00' }))).toBe(true)
+    expect(shiftsOverlap(a, d({ start_time: '06:00:00', end_time: '23:00:00' }))).toBe(true)
+  })
+  it('chạm mép / khác giờ → không trùng', () => {
+    const a = d({ start_time: '08:00:00', end_time: '12:00:00' })
+    expect(shiftsOverlap(a, d({ start_time: '12:00:00', end_time: '16:00:00' }))).toBe(false)
+    expect(shiftsOverlap(a, d({ start_time: '13:00:00', end_time: '17:00:00' }))).toBe(false)
+  })
+  it('ca qua đêm 22:00-02:00 cùng ngày: trùng ca tối 21:00, KHÔNG trùng ca sáng hôm sau của cùng ngày', () => {
+    const night = d({ start_time: '22:00:00', end_time: '02:00:00' })
+    expect(shiftsOverlap(night, d({ start_time: '21:00:00', end_time: '23:00:00' }))).toBe(true)
+    expect(shiftsOverlap(night, d({ start_time: '20:00:00', end_time: '22:30:00' }))).toBe(true)
+    // đuôi 00:00-02:00 thuộc ngày HÔM SAU nên không giao ca sáng cùng ngày
+    expect(shiftsOverlap(night, d({ start_time: '00:30:00', end_time: '03:00:00' }))).toBe(false)
+    expect(shiftsOverlap(night, d({ start_time: '03:00:00', end_time: '05:00:00' }))).toBe(false)
+  })
+  it('hai ca đều qua đêm cùng ngày → luôn trùng phần tối', () => {
+    expect(shiftsOverlap(
+      d({ start_time: '22:00:00', end_time: '02:00:00' }),
+      d({ start_time: '23:00:00', end_time: '03:00:00' }),
+    )).toBe(true)
+  })
+  it('khác ngày → không bao giờ trùng', () => {
+    const a = d({})
+    expect(shiftsOverlap(a, d({ work_date: '2026-10-16' }))).toBe(false)
   })
 })

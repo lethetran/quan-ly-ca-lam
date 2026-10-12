@@ -47,6 +47,9 @@
 | `tsconfig.tsbuildinfo` bị commit; README lẫn chữ Hán ("本地") | `.gitignore`, `README.md` | `git ls-files` | ✅ |
 | Truy vấn không giới hạn độ dài | `src/lib/api.ts` | DB lớn dần | ✅ `.limit(500)` + index (migration 0001) |
 | Thẻ "Hồ sơ CCCD chờ duyệt" trên dashboard recruiter trỏ trang không có quyền (bấm = đá về dashboard) | `src/pages/Recruiter.tsx` | Đăng nhập recruiter → Bảng điều khiển → bấm thẻ KYC | ✅ Chỉ hiện với admin (FEATURES.md bước 1) |
+| Worker đăng ký ca trùng giờ chỉ gặp thông báo chung chung, không biết trùng ca nào; DB và client lệch luật ca qua đêm | `src/components/ShiftDetail.tsx`, `src/lib/util.ts`, `supabase/migrations/0005` | lam2 (đã có ca 15/10 13:00–17:00) mở ca 15/10 15:00–19:00 | ✅ Banner đỏ "Trùng giờ với ca «X»" + tắt nút gửi; migration 0005 đồng bộ luật trùng giờ ở DB (đuôi ca đêm thuộc hôm sau, không giao ca sáng cùng ngày); 21 unit test + 2 bộ SQL suite PASS; blackbox xác nhận DB chặn |
+| Thiếu thông tin email trong hồ sơ (không biết tài khoản gắn với email nào) | `supabase/migrations/0005`, `src/lib/api.ts`, `src/pages/ProfileForm.tsx`, `src/pages/Admin.tsx`, `src/lib/types.ts` | Mở Hồ sơ & cài đặt / Quản lý người dùng | ✅ profiles lưu email; Hồ sơ hiện email (chỉ đọc); trang Quản lý người dùng thêm cột Email |
+| Không có xác thực email → ai cũng tạo được tài khoản ồ ạt (kể cả domain giả) | Supabase Auth config, `src/pages/Login.tsx`, `src/lib/store.tsx`, `src/lib/util.ts` | Đăng ký mới | ✅ Bật mailer xác thực (autoconfirm=false, Site URL + allow-list vercel/pages/localhost); đăng ký bắt buộc email thật (chặn @nhanvien.local); màn hình "Kiểm tra email"; đăng nhập trước xác thực bị chặn + thông báo tiếng Việt. Lưu ý vận hành: SMTP mặc định của Supabase giới hạn ~2 thư/giờ — cần SMTP riêng (mục 4.8) |
 | **Tạo tài khoản xong "đã đăng nhập" nhưng mọi nút chết, không bị bắt điền hồ sơ** (gốc rễ: 2 sự kiện phiên cùng gọi tạo hồ sơ → chèn trùng → profile null → vòng lặp Login/"Vào hệ thống" vô nghĩa) | `src/lib/api.ts` (ensureProfile), `src/lib/store.tsx`, `src/App.tsx`, `src/pages/Login.tsx` | Tạo tài khoản mới ngay sau deploy cũ | ✅ ensureProfile chống đua (gom 1 luồng + đọc lại khi trùng, chuẩn hóa username); Shell tách 3 trạng thái: chưa đăng nhập → Login, có phiên nhưng chưa có hồ sơ → màn hình khôi phục (tự thử lại + Thử lại + Đăng xuất, không còn nút chết); xóa thẻ "Vào hệ thống" chết trong Login. E2E: tạo tk mới → rơi thẳng trang "Hoàn thiện hồ sơ để bắt đầu" ✓; lam2 → menu "Hồ sơ & cài đặt" mở form sửa + Lưu thay đổi ✓ |
 
 ---
@@ -80,6 +83,7 @@ _Hiện không có việc dở dang._ (Ghi vào đây ngay khi bắt đầu vi�
 | Chưa đo Lighthouse (mục tiêu ≥90 Performance/Accessibility/Best Practices) | — | Chạy Lighthouse trên vercel.app | 📌 |
 | File trang quá lớn chưa tách (`Recruiter.tsx` ~700 dòng, `Owner.tsx`, `Worker.tsx`) | `src/pages/` | — | 📌 Tách dần khi chạm tay vào |
 | Thống kê chỉ gom theo tháng; chưa có gom theo tuần | `src/pages/Worker.tsx`, `Recruiter.tsx` | Chọn tuần trong thống kê | 📌 |
+| Trùng giờ CHÉO NGÀY chưa chặn: ca đêm 22:00–02:00 ngày 14 và ca sáng 08:00 ngày 15 (khác work_date) không bị coi là trùng (cả client lẫn DB so cùng ngày) | `src/lib/util.ts`, `supabase/migrations/0005` | Ca đêm hôm trước + sáng hôm sau | 📌 Hiếm gặp, ghi nhận hạn chế |
 | Ca lặp lại định kỳ (nhân bản tuần) chưa có | `src/pages/Owner.tsx` | — | 📌 |
 | Zalo chỉ là copy-paste nội dung (API Zalo không cho web post nhóm) | `src/components/ZaloShare.tsx` | Bấm chia sẻ | 📌 Giữ nguyên, đã ghi rõ trong UI |
 | Ảnh CCCD chỉ có nén client; chưa quét virus/verify nội dung ảnh phía server | Storage bucket | — | 📌 Cân nhắc edge function |
@@ -97,6 +101,7 @@ _Hiện không có việc dở dang._ (Ghi vào đây ngay khi bắt đầu vi�
 | 4 | **Xóa dữ liệu demo** (2 ca mẫu + đăng ký) nếu muốn bắt đầu trắng | Dashboard → Table Editor → shifts (xóa 2 ca "Hỗ trợ…") | ⏳ Tùy |
 | 5 | **Quyết định cơ chế đăng ký thật**: bật SMTP + xác nhận email, hoặc SĐT + OTP (xem Backlog Vừa) | Dashboard → Authentication → Providers/SMTP | ⏳ Chờ quyết định |
 | 6 | **Mở khóa GitHub billing** nếu muốn GitHub Pages dự phòng tự deploy (Vercel KHÔNG bị ảnh hưởng — vẫn tự deploy theo push) | github.com → Settings → Billing | ⏳ |
+| 8 | **Cấu hình SMTP riêng để gửi mail xác thực** — SMTP mặc định của Supabase chỉ gửi được ~2 thư/giờ (đã chạm hạn khi test) | Dashboard → Authentication → SMTP: điền provider (Resend/Mailgun/Gmail app-password…) | ⏳ Chưa làm |
 | 7 | **Sao lưu + quy trình xoay khóa khi lộ** (tài liệu có trong README) | Dashboard → Database → Backups; rotate key ở Dashboard → API; đổi mật khẩu DB ở Database → Settings | ⏳ Lên lịch định kỳ |
 
 ---

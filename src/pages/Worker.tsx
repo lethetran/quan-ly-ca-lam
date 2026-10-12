@@ -115,7 +115,7 @@ export function WorkerShifts() {
         </div>
       )}
 
-      <ShiftDetail shift={sel} regs={regs} profiles={[]} onClose={() => setSel(null)} onChanged={reload} />
+      <ShiftDetail shift={sel} regs={regs} profiles={[]} allShifts={shifts} onClose={() => setSel(null)} onChanged={reload} />
     </div>
   )
 }
@@ -210,7 +210,7 @@ export function WorkerMyShifts() {
         })}
       </div>
 
-      <ShiftDetail shift={sel} regs={regs} profiles={[]} onClose={() => setSel(null)} onChanged={reload} />
+      <ShiftDetail shift={sel} regs={regs} profiles={[]} allShifts={shifts} onClose={() => setSel(null)} onChanged={reload} />
     </div>
   )
 }

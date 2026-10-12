@@ -3,7 +3,7 @@ import { fetchRoster, notify, registerShift, updateRegistration } from '../lib/a
 import { useSession, useToast } from '../lib/store'
 import type { Profile, Registration, Shift } from '../lib/types'
 import { SHIFT_STATUS_COLOR, SHIFT_STATUS_LABEL } from '../lib/types'
-import { effStatus, fmtD, fmtDT, fmtT, money, regOpen, shiftTimes } from '../lib/util'
+import { effStatus, fmtD, fmtDT, fmtT, money, regOpen, shiftTimes, shiftsOverlap } from '../lib/util'
 import { Badge, Modal } from './ui'
 import { ShiftZaloShare } from './ZaloShare'
 
@@ -11,12 +11,14 @@ export default function ShiftDetail({
   shift,
   regs: allRegs,
   profiles,
+  allShifts,
   onClose,
   onChanged,
 }: {
   shift: Shift | null
   regs: Registration[]
   profiles: Profile[]
+  allShifts?: Shift[]
   onClose: () => void
   onChanged?: () => void
 }) {
@@ -47,7 +49,14 @@ export default function ShiftDetail({
   const open = regOpen(shift)
   const myReg = regs.find((r) => r.worker_id === me.id && r.status !== 'removed')
   const nameOf = (id: string) => profiles.find((p) => p.id === id)?.full_name || roster.find((r) => r.worker_id === id)?.full_name || 'Người làm'
-  const canRegister = me.role === 'worker' && open && !myReg && remaining > 0 && me.kyc_status === 'approved'
+  // Worker: cảnh báo ca này trùng giờ với ca khác mình đã đăng ký/dang chờ
+  const overlapShift = me.role === 'worker'
+    ? (allShifts ?? []).find((s2) =>
+        s2.id !== shift.id
+        && allRegs.some((r) => r.shift_id === s2.id && r.worker_id === me.id && (r.status === 'pending' || r.status === 'approved'))
+        && shiftsOverlap(s2, shift))
+    : undefined
+  const canRegister = me.role === 'worker' && open && !myReg && remaining > 0 && me.kyc_status === 'approved' && !overlapShift
   const canCancel =
     me.role === 'worker' && myReg && open
     && (myReg.status === 'pending' || (myReg.status === 'approved' && Date.now() < shiftTimes(shift).start.getTime()))
@@ -135,10 +144,18 @@ export default function ShiftDetail({
                 </div>
                 {canCancel && <button className="btn-danger" disabled={busy} onClick={doCancel}>Hủy đăng ký</button>}
               </div>
+            ) : overlapShift ? (
+              <div className="space-y-2">
+                <div className="rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800">
+                  <b>Trùng giờ với ca “{overlapShift.title}”</b> — {fmtD(overlapShift.work_date)} · {fmtT(overlapShift.start_time)}→{fmtT(overlapShift.end_time)} tại {overlapShift.location}.
+                  Hủy ca đó trước (mục “Ca của tôi”) nếu bạn muốn đăng ký ca này.
+                </div>
+                <button className="btn-ghost w-full" disabled>Gửi đăng ký (bị chặn vì trùng giờ)</button>
+              </div>
             ) : canRegister ? (
               <div className="space-y-2.5">
                 <div className="font-semibold">Đăng ký ca này</div>
-                <input className="field" placeholder="Ghi chú cho tuyển dụng (không bắt buộc)" value={note} onChange={(e) => setNote(e.target.value)} />
+                <input className="field" placeholder="Ghi chú cho tuyển dụng (không bắt buộc)" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
                 <button className="btn-primary w-full" disabled={busy} onClick={doRegister}>Gửi đăng ký</button>
               </div>
             ) : (

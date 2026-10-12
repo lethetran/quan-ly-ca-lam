@@ -200,12 +200,13 @@ export function Users() {
       <input className="field max-w-sm" placeholder="Tìm theo tên, tài khoản, SĐT…" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
-          <thead><tr><th className="th">Người</th><th className="th">Tài khoản</th><th className="th">SĐT</th><th className="th">Hồ sơ</th><th className="th">Vai trò</th></tr></thead>
+          <thead><tr><th className="th">Người</th><th className="th">Tài khoản</th><th className="th">Email</th><th className="th">SĐT</th><th className="th">Hồ sơ</th><th className="th">Vai trò</th></tr></thead>
           <tbody>
             {filtered.map((p) => (
               <tr key={p.id}>
                 <td className="td font-semibold">{p.full_name || '(chưa tên)'}</td>
                 <td className="td text-zinc-500">{shortAccount(p.username)}</td>
+                <td className="td text-zinc-500">{p.email || '—'}</td>
                 <td className="td">{p.phone || '—'}</td>
                 <td className="td">
                   <Badge className={
@@ -228,7 +229,7 @@ export function Users() {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td className="td text-center text-zinc-400" colSpan={5}>Không tìm thấy ai</td></tr>}
+            {filtered.length === 0 && <tr><td className="td text-center text-zinc-400" colSpan={6}>Không tìm thấy ai</td></tr>}
           </tbody>
         </table>
       </div>
