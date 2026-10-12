@@ -9,17 +9,34 @@ function unwrap<T>(data: T | null, error: { message: string } | null): T {
 
 // ===== Hồ sơ =====
 // Vai trò do server quyết định (trigger đọc bảng app_admins) — client không gửi role.
+// Chống đua: nhiều sự kiện phiên đăng nhập cùng gọi → gom về 1 lần chạy; nếu chèn trùng
+// (2 luồng cùng lúc) thì đọc lại thay vì báo lỗi.
+const profileInflight = new Map<string, Promise<Profile | null>>()
+
 export async function ensureProfile(userId: string, email: string): Promise<Profile | null> {
-  const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
-  if (data) return data as Profile
-  const username = email.split('@')[0]
-  const { data: created, error } = await supabase
-    .from('profiles')
-    .insert({ id: userId, username, kyc_status: 'unsubmitted' })
-    .select('*')
-    .single()
-  if (error) throw new Error(error.message)
-  return created as Profile
+  const running = profileInflight.get(userId)
+  if (running) return running
+  const task = (async () => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    if (data) return data as Profile
+    // username chỉ a-z0-9._ (khớp ràng buộc DB); hỏng định dạng thì sinh từ id
+    let username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '')
+    if (username.length < 3) username = `u_${userId.slice(0, 8)}`
+    const { error } = await supabase.from('profiles').insert({ id: userId, username, kyc_status: 'unsubmitted' })
+    if (error) {
+      const { data: again } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+      if (again) return again as Profile
+      throw new Error(error.message)
+    }
+    const { data: created } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    return (created as Profile) ?? null
+  })()
+  profileInflight.set(userId, task)
+  try {
+    return await task
+  } finally {
+    profileInflight.delete(userId)
+  }
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {

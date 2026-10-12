@@ -47,6 +47,7 @@
 | `tsconfig.tsbuildinfo` bị commit; README lẫn chữ Hán ("本地") | `.gitignore`, `README.md` | `git ls-files` | ✅ |
 | Truy vấn không giới hạn độ dài | `src/lib/api.ts` | DB lớn dần | ✅ `.limit(500)` + index (migration 0001) |
 | Thẻ "Hồ sơ CCCD chờ duyệt" trên dashboard recruiter trỏ trang không có quyền (bấm = đá về dashboard) | `src/pages/Recruiter.tsx` | Đăng nhập recruiter → Bảng điều khiển → bấm thẻ KYC | ✅ Chỉ hiện với admin (FEATURES.md bước 1) |
+| **Tạo tài khoản xong "đã đăng nhập" nhưng mọi nút chết, không bị bắt điền hồ sơ** (gốc rễ: 2 sự kiện phiên cùng gọi tạo hồ sơ → chèn trùng → profile null → vòng lặp Login/"Vào hệ thống" vô nghĩa) | `src/lib/api.ts` (ensureProfile), `src/lib/store.tsx`, `src/App.tsx`, `src/pages/Login.tsx` | Tạo tài khoản mới ngay sau deploy cũ | ✅ ensureProfile chống đua (gom 1 luồng + đọc lại khi trùng, chuẩn hóa username); Shell tách 3 trạng thái: chưa đăng nhập → Login, có phiên nhưng chưa có hồ sơ → màn hình khôi phục (tự thử lại + Thử lại + Đăng xuất, không còn nút chết); xóa thẻ "Vào hệ thống" chết trong Login. E2E: tạo tk mới → rơi thẳng trang "Hoàn thiện hồ sơ để bắt đầu" ✓; lam2 → menu "Hồ sơ & cài đặt" mở form sửa + Lưu thay đổi ✓ |
 
 ---
 

@@ -1,6 +1,5 @@
 import { CalendarRange, ClipboardCheck, ShieldCheck, Wallet } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ProfileForm, KycBanner } from './ProfileForm'
 import { useSession, useToast } from '../lib/store'
 import { PASSWORD_HINT, passwordOk } from '../lib/util'
@@ -29,38 +28,13 @@ export function Onboarding() {
 }
 
 export default function Login() {
-  const { profile, userId, signIn, signUp } = useSession()
+  // Trang này chỉ hiện khi CHƯA đăng nhập — Shell chặn mọi phiên khác để không còn vòng lặp nút chết
+  const { signIn, signUp } = useSession()
   const { push } = useToast()
-  const nav = useNavigate()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [login, setLogin] = useState('')
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
-
-  // Đã đăng nhập: hiện trạng thái hồ sơ / nút vào hệ thống
-  if (userId) {
-    const blocked = profile?.role === 'worker' && profile.kyc_status !== 'approved'
-    return (
-      <div className="mx-auto max-w-xl py-10">
-        <div className="card p-6">
-          <h1 className="text-2xl font-bold">Chào bạn!</h1>
-          <p className="mt-1 text-sm text-zinc-500">Tài khoản <b>{login}</b> đã đăng nhập.</p>
-          {profile?.role === 'worker' && (
-            <div className="mt-4"><KycBanner status={profile.kyc_status} note={profile.kyc_note} /></div>
-          )}
-          {blocked && profile?.kyc_status !== 'pending' && (
-            <div className="mt-4 border-t border-zinc-200 pt-4">
-              <h2 className="mb-3 font-display text-lg font-bold uppercase">Khai báo hồ sơ CCCD</h2>
-              <ProfileForm />
-            </div>
-          )}
-          <button className="btn-primary mt-5 w-full" onClick={() => nav('/')}>
-            {blocked && profile?.kyc_status !== 'approved' ? 'Vào hệ thống (chưa đăng ký ca được)' : 'Vào hệ thống'}
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   const submit = async () => {
     if (!login.trim() || !pw) { push('Nhập tài khoản và mật khẩu', true); return }

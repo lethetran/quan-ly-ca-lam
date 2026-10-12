@@ -78,10 +78,36 @@ function ConfigNotice() {
   )
 }
 
+// Đã đăng nhập nhưng chưa tạo được hồ sơ: màn hình khôi phục (không quay về đăng nhập để tránh vòng lặp nút chết)
+function ProfileRecover({ onRetry, onSignOut }: { onRetry: () => void; onSignOut: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onRetry, 2500) // tự thử lại 1 lần (đề phòng race lúc tạo hồ sơ)
+    return () => clearTimeout(t)
+  }, [onRetry])
+  return (
+    <div className="mx-auto max-w-md p-6">
+      <div className="card p-6 text-center">
+        <h1 className="text-xl font-bold">Chưa tải được hồ sơ của bạn</h1>
+        <p className="mt-2 text-sm text-zinc-500">
+          Tài khoản đã đăng nhập nhưng hệ thống chưa tạo xong hồ sơ. Bấm <b>Thử lại</b> — nếu vẫn lỗi, đăng xuất rồi đăng nhập lại.
+        </p>
+        <div className="mt-4 flex justify-center gap-2">
+          <button className="btn-primary" onClick={onRetry}>Thử lại</button>
+          <button className="btn-ghost" onClick={onSignOut}>Đăng xuất</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Shell() {
-  const { ready, profile } = useSession()
+  const { ready, profile, userId, profileFailed, reloadProfile, signOut } = useSession()
   if (!ready) return <div className="flex min-h-screen items-center justify-center"><Spinner /></div>
-  if (!profile) return <Login />
+  if (!userId) return <Login />
+  if (!profile) {
+    if (profileFailed) return <ProfileRecover onRetry={reloadProfile} onSignOut={signOut} />
+    return <div className="flex min-h-screen items-center justify-center"><Spinner /></div>
+  }
   // Người đi làm chưa nộp / bị từ chối hồ sơ: bắt sang bước điền hồ sơ ngay
   if (profile.role === 'worker' && (profile.kyc_status === 'unsubmitted' || profile.kyc_status === 'rejected')) {
     return <Onboarding />

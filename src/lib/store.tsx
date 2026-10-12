@@ -43,6 +43,7 @@ type SessionState = {
   userId: string | null
   email: string | null
   profile: Profile | null
+  profileFailed: boolean
   reloadProfile: () => Promise<void>
   signIn: (login: string, password: string) => Promise<void>
   signUp: (login: string, password: string) => Promise<void>
@@ -57,14 +58,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [profileFailed, setProfileFailed] = useState(false)
 
   const loadProfile = useCallback(async (uid: string, mail: string) => {
+    setProfileFailed(false)
     try {
       const p = await ensureProfile(uid, mail)
-      setProfile(p)
+      if (p) setProfile(p) // lỗi thì giữ hồ sơ cũ (nếu có), không xóa trắng
     } catch (e) {
-      console.error(e)
-      setProfile(null)
+      console.error('Tải hồ sơ thất bại:', e)
+      setProfileFailed(true)
     }
   }, [])
 
@@ -83,7 +86,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setUserId(u?.id ?? null)
       setEmail(u?.email ?? null)
       if (u && u.email) loadProfile(u.id, u.email)
-      if (!u) setProfile(null)
+      if (!u) {
+        setProfile(null)
+        setProfileFailed(false)
+      }
     })
     return () => sub.subscription.unsubscribe()
   }, [loadProfile])
@@ -118,8 +124,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [userId, email, loadProfile])
 
   const value = useMemo(
-    () => ({ ready, userId, email, profile, reloadProfile, signIn, signUp, signOut }),
-    [ready, userId, email, profile, reloadProfile, signIn, signUp, signOut],
+    () => ({ ready, userId, email, profile, profileFailed, reloadProfile, signIn, signUp, signOut }),
+    [ready, userId, email, profile, profileFailed, reloadProfile, signIn, signUp, signOut],
   )
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>
 }
