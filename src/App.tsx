@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { HashRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import { Spinner, Banner } from './components/ui'
 import { SessionProvider, ToastProvider, useSession } from './lib/store'
@@ -143,6 +143,10 @@ function Shell() {
     </Layout>
   )
 }
+
+// Host chính (Vercel) dùng URL sạch; mirror GitHub Pages không hỗ trợ SPA rewrite nên giữ hash
+const ON_GITHUB_PAGES = typeof location !== 'undefined' && location.hostname.endsWith('.github.io')
+const AppRouter = ON_GITHUB_PAGES ? HashRouter : BrowserRouter
 
 export default function App() {
   return (
